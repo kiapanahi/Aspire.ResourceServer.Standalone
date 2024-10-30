@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <ItemGroup>
+        <Protobuf Include="Protos\resource_service.proto" GrpcServices="Server"/>
     </ItemGroup>
 
     <ItemGroup>
