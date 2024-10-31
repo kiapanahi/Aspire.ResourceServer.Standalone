@@ -5,7 +5,7 @@ using Server.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddSingleton<IServiceInformationProvider, AssemblyServiceInformationProvider>();
+builder.Services.AddServiceInformationProvider();
 builder.Services.AddGrpc();
 
 var app = builder.Build();
