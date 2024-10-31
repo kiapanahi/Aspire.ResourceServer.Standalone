@@ -52,6 +52,9 @@ Generated\ Files/
 TestResult.xml
 nunit-*.xml
 
+# Visual Studio's Live Unit Testing
+*.lutconfig
+
 # Build Results of an ATL Project
 [Dd]ebugPS/
 [Rr]eleasePS/

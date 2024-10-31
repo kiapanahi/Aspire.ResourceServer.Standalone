@@ -1,7 +1,22 @@
 <Project>
   <!-- See https://aka.ms/dotnet/msbuild/customize for more details on customizing your build -->
   <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
+    <NoWarn>$(NoWarn); IDE0290</NoWarn>
 
+    <RootNamespace>Aspire.ResourceServer.Standalone</RootNamespace>
+
+    <Authors>Kia Raad</Authors>
+
+    <Description>A standalone resouce server for .NET Aspire</Description>
+
+    <Version>0.0.1</Version>
   </PropertyGroup>
 </Project>
