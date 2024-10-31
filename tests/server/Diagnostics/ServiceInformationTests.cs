@@ -31,7 +31,7 @@ public sealed class ServiceInformationTests
     }
 
     [Fact]
-    public void MultipleServiceInformationProviderResulutionsResultInSameInstance()
+    public void MultipleServiceInformationProviderResolutionsResultInSameInstance()
     {
         var sp = new ServiceCollection()
             .AddServiceInformationProvider()
