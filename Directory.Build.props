@@ -1,18 +1,20 @@
 <Project>
-    <!-- See https://aka.ms/dotnet/msbuild/customize for more details on customizing your build -->
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <Nullable>enable</Nullable>
-        <LangVersion>latest</LangVersion>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <AnalysisLevel>latest</AnalysisLevel>
-        <AnalysisMode>Recommended</AnalysisMode>
-        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  <!-- See https://aka.ms/dotnet/msbuild/customize for more details on customizing your build -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
-        <Authors>Kia Raad</Authors>
+    <RootNamespace>Aspire.ResourceServer.Standalone</RootNamespace>
 
-        <Description>A standalone resouce server for .NET Aspire</Description>
+    <Authors>Kia Raad</Authors>
 
-        <Version>0.0.1</Version>
-    </PropertyGroup>
+    <Description>A standalone resouce server for .NET Aspire</Description>
+
+    <Version>0.0.1</Version>
+  </PropertyGroup>
 </Project>
