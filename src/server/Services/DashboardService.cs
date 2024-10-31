@@ -1,8 +1,7 @@
+using Aspire.ResourceServer.Standalone.Server.Diagnostics;
 using Aspire.ResourceService.Proto.V1;
 
 using Grpc.Core;
-
-using Server.Diagnostics;
 
 namespace Server.Services;
 
