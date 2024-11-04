@@ -5,7 +5,7 @@ using Google.Protobuf.WellKnownTypes;
 
 using Grpc.Core;
 
-namespace Server.Services;
+namespace Aspire.ResourceServer.Standalone.Server.Services;
 
 internal sealed class DashboardService : Aspire.ResourceService.Proto.V1.DashboardService.DashboardServiceBase
 {

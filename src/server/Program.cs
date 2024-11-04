@@ -1,4 +1,5 @@
 using Aspire.ResourceServer.Standalone.Server.Diagnostics;
+using Aspire.ResourceServer.Standalone.Server.Services;
 
 using Server.Services;
 
