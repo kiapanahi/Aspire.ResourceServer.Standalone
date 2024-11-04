@@ -13,4 +13,8 @@
     <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.66.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\resource-locator\ResourceLocator.csproj" />
+  </ItemGroup>
+
 </Project>
