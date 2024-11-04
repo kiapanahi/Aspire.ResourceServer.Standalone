@@ -23,6 +23,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server.Tests", "tests\serve
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ResourceLocator", "src\resource-locator\ResourceLocator.csproj", "{043D21F5-5F68-49E3-9E5F-FD4B60521997}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Proto", "Proto", "{814C273E-ECD0-492E-9F97-494DF8352023}"
+	ProjectSection(SolutionItems) = preProject
+		src\proto\resource_service.proto = src\proto\resource_service.proto
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -49,5 +54,6 @@ Global
 		{15BAD951-218B-4A4E-8257-8F859B3E7D76} = {6E405F73-722B-43F6-808E-4CB16FA3ADB0}
 		{689A3B97-E8A0-4122-92EF-1411538120D1} = {E5A71AF7-6E1E-45D9-B686-68D23454F7FF}
 		{043D21F5-5F68-49E3-9E5F-FD4B60521997} = {6E405F73-722B-43F6-808E-4CB16FA3ADB0}
+		{814C273E-ECD0-492E-9F97-494DF8352023} = {6E405F73-722B-43F6-808E-4CB16FA3ADB0}
 	EndGlobalSection
 EndGlobal
