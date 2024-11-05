@@ -5,12 +5,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Protobuf Include="Protos\resource_service.proto" GrpcServices="Server" />
+    <Protobuf Include="..\proto\resource_service.proto" GrpcServices="Server" >
+      <Access>Internal</Access>
+      <Link>Protos\resource_service.proto</Link>
+    </Protobuf>
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.66.0" />
     <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.66.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\resource-locator\ResourceLocator.csproj" />
   </ItemGroup>
 
 </Project>
