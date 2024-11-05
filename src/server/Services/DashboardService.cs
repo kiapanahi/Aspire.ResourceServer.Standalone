@@ -32,6 +32,7 @@ internal sealed class DashboardService : Aspire.ResourceService.Proto.V1.Dashboa
     public override async Task WatchResources(WatchResourcesRequest request,
         IServerStreamWriter<WatchResourcesUpdate> responseStream, ServerCallContext context)
     {
+        _logger.LogWatchResources();
         while (!context.CancellationToken.IsCancellationRequested)
         {
             await responseStream.WriteAsync(
@@ -62,4 +63,7 @@ internal static partial class Log
 {
     [LoggerMessage(LogLevel.Trace, "Returning application information")]
     public static partial void ReturningApplicationInformation(this ILogger logger);
+
+    [LoggerMessage(LogLevel.Information, "Watching Resources")]
+    public static partial void LogWatchResources(this ILogger logger);
 }
