@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Protobuf Include="..\proto\resource_service.proto" GrpcServices="None" >
+    <Protobuf Include="..\proto\resource_service.proto" GrpcServices="None">
       <Access>public</Access>
       <Link>Protos\resource_service.proto</Link>
     </Protobuf>
@@ -19,6 +19,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
   </ItemGroup>
 
 </Project>
