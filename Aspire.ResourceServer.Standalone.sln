@@ -28,6 +28,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Proto", "Proto", "{814C273E
 		src\proto\resource_service.proto = src\proto\resource_service.proto
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Compose", "Compose", "{1E7C3FA4-A3EB-4E33-BB15-C2279A36621B}"
+	ProjectSection(SolutionItems) = preProject
+		compose\compose.yaml = compose\compose.yaml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
