@@ -1,3 +1,3 @@
-namespace Aspire.ResourceServer.Standalone.Server.Diagnostics;
+namespace Aspire.ResourceService.Standalone.Server.Diagnostics;
 
 public readonly record struct ServiceInformation(string Name, string Version);

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RootNamespace>$(RootNamespace).ResourceLocator</RootNamespace>
+    <RootNamespace>$(RootNamespace).ResourceProvider</RootNamespace>
     <NoWarn>$(NoWarn); CA1848</NoWarn>
   </PropertyGroup>
 

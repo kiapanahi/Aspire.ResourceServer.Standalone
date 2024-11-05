@@ -1,0 +1,64 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6E405F73-722B-43F6-808E-4CB16FA3ADB0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Misc", "Misc", "{E97F6EF2-B538-4929-B395-36AB729A1641}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
+		LICENSE = LICENSE
+		nuget.config = nuget.config
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E5A71AF7-6E1E-45D9-B686-68D23454F7FF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Proto", "Proto", "{814C273E-ECD0-492E-9F97-494DF8352023}"
+	ProjectSection(SolutionItems) = preProject
+		src\proto\resource_service.proto = src\proto\resource_service.proto
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Compose", "Compose", "{1E7C3FA4-A3EB-4E33-BB15-C2279A36621B}"
+	ProjectSection(SolutionItems) = preProject
+		compose\compose.yaml = compose\compose.yaml
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.ResourceService.Standalone.ResourceProvider", "D:\Projects\Contrib\GitHub\k\Aspire.ResourceServer.Standalone\src\Aspire.ResourceService.Standalone.ResourceProvider\Aspire.ResourceService.Standalone.ResourceProvider.csproj", "{12E9750C-2CC7-4854-9877-813ADBB0957A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.ResourceService.Standalone.Server", "D:\Projects\Contrib\GitHub\k\Aspire.ResourceServer.Standalone\src\Aspire.ResourceService.Standalone.Server\Aspire.ResourceService.Standalone.Server.csproj", "{20984F03-BA2E-404D-A15D-6A763BCDBBAA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.ResourceService.Standalone.Server.Tests", "D:\Projects\Contrib\GitHub\k\Aspire.ResourceServer.Standalone\tests\Aspire.ResourceService.Standalone.Server.Tests\Aspire.ResourceService.Standalone.Server.Tests.csproj", "{7C5F1EEC-6E23-4B3B-936D-135FEB241F31}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{12E9750C-2CC7-4854-9877-813ADBB0957A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12E9750C-2CC7-4854-9877-813ADBB0957A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12E9750C-2CC7-4854-9877-813ADBB0957A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12E9750C-2CC7-4854-9877-813ADBB0957A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{20984F03-BA2E-404D-A15D-6A763BCDBBAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{20984F03-BA2E-404D-A15D-6A763BCDBBAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{20984F03-BA2E-404D-A15D-6A763BCDBBAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{20984F03-BA2E-404D-A15D-6A763BCDBBAA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C5F1EEC-6E23-4B3B-936D-135FEB241F31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C5F1EEC-6E23-4B3B-936D-135FEB241F31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C5F1EEC-6E23-4B3B-936D-135FEB241F31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C5F1EEC-6E23-4B3B-936D-135FEB241F31}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{814C273E-ECD0-492E-9F97-494DF8352023} = {6E405F73-722B-43F6-808E-4CB16FA3ADB0}
+		{12E9750C-2CC7-4854-9877-813ADBB0957A} = {6E405F73-722B-43F6-808E-4CB16FA3ADB0}
+		{20984F03-BA2E-404D-A15D-6A763BCDBBAA} = {6E405F73-722B-43F6-808E-4CB16FA3ADB0}
+		{7C5F1EEC-6E23-4B3B-936D-135FEB241F31} = {E5A71AF7-6E1E-45D9-B686-68D23454F7FF}
+	EndGlobalSection
+EndGlobal

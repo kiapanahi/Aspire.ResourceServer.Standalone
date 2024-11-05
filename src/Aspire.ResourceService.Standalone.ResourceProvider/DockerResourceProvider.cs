@@ -1,4 +1,6 @@
-﻿using Docker.DotNet;
+﻿using Aspire.ResourceService.Standalone.ResourceProvider;
+
+using Docker.DotNet;
 using Docker.DotNet.Models;
 
 using Microsoft.Extensions.Logging;

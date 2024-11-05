@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Protobuf Include="..\proto\resource_service.proto" GrpcServices="Server" >
+    <Protobuf Include="..\proto\resource_service.proto" GrpcServices="Server">
       <Access>Internal</Access>
       <Link>Protos\resource_service.proto</Link>
     </Protobuf>
@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\resource-locator\ResourceLocator.csproj" />
+    <ProjectReference Include="..\Aspire.ResourceService.Standalone.ResourceProvider\Aspire.ResourceService.Standalone.ResourceProvider.csproj" />
   </ItemGroup>
 
 </Project>
