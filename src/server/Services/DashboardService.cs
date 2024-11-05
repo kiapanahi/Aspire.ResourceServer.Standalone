@@ -1,20 +1,26 @@
+using Aspire.ResourceServer.Standalone.ResourceLocator;
 using Aspire.ResourceServer.Standalone.Server.Diagnostics;
 using Aspire.ResourceService.Proto.V1;
 
-using Google.Protobuf.WellKnownTypes;
-
 using Grpc.Core;
 
-namespace Server.Services;
+namespace Aspire.ResourceServer.Standalone.Server.Services;
 
 internal sealed class DashboardService : Aspire.ResourceService.Proto.V1.DashboardService.DashboardServiceBase
 {
-    private readonly ILogger<DashboardService> _logger;
     private readonly IServiceInformationProvider _serviceInformationProvider;
+    private readonly IResourceProvider _resourceProvider;
+    private readonly IHostApplicationLifetime _hostApplicationLifetime;
+    private readonly ILogger<DashboardService> _logger;
 
-    public DashboardService(IServiceInformationProvider serviceInformationProvider, ILogger<DashboardService> logger)
+    public DashboardService(IServiceInformationProvider serviceInformationProvider,
+        IResourceProvider resourceProvider,
+        IHostApplicationLifetime hostApplicationLifetime,
+        ILogger<DashboardService> logger)
     {
         _serviceInformationProvider = serviceInformationProvider;
+        _resourceProvider = resourceProvider;
+        _hostApplicationLifetime = hostApplicationLifetime;
         _logger = logger;
     }
 
@@ -25,34 +31,48 @@ internal sealed class DashboardService : Aspire.ResourceService.Proto.V1.Dashboa
 
         return Task.FromResult(new ApplicationInformationResponse
         {
-            ApplicationName = _serviceInformationProvider.GetServiceInformation().ToString()
+            ApplicationName = _serviceInformationProvider.GetServiceInformation().Name
         });
     }
 
     public override async Task WatchResources(WatchResourcesRequest request,
         IServerStreamWriter<WatchResourcesUpdate> responseStream, ServerCallContext context)
     {
-        while (!context.CancellationToken.IsCancellationRequested)
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostApplicationLifetime.ApplicationStopping, context.CancellationToken);
+
+        try
         {
-            await responseStream.WriteAsync(
-                new WatchResourcesUpdate
+            var resources = await _resourceProvider.GetResourcesAsync().ConfigureAwait(false);
+
+            var data = new InitialResourceData();
+
+            foreach (var r in resources)
+            {
+                data.Resources.Add(new Resource
                 {
-                    InitialData = new InitialResourceData
-                    {
-                        Resources =
-                        {
-                            new Resource
-                            {
-                                Name = "my-resource",
-                                State = "foobar",
-                                DisplayName = "MY FREAKING RESOURCE",
-                                CreatedAt = Timestamp.FromDateTimeOffset(DateTimeOffset.Now),
-                                ResourceType = "EXTERNAL RESOURCE",
-                                Uid = Guid.NewGuid().ToString("D")
-                            }
-                        }
-                    }
-                }, context.CancellationToken);
+                    DisplayName = r.DisplayName,
+                    Name = r.Name,
+                    CreatedAt = r.CreatedAt,
+                    State = r.State,
+                    ResourceType = "container",
+                    Uid = r.Uid
+                });
+            }
+
+            await responseStream.WriteAsync(new() { InitialData = data }, cts.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cts.Token.IsCancellationRequested)
+        {
+            // Ignore cancellation and just return.
+        }
+        catch (IOException) when (cts.Token.IsCancellationRequested)
+        {
+            // Ignore cancellation and just return. Cancelled writes throw IOException.
+        }
+        catch (Exception ex)
+        {
+            _logger.LogErrorWatchingResources(context.Method, ex);
+            throw;
         }
     }
 }
@@ -62,4 +82,7 @@ internal static partial class Log
 {
     [LoggerMessage(LogLevel.Trace, "Returning application information")]
     public static partial void ReturningApplicationInformation(this ILogger logger);
+
+    [LoggerMessage(LogLevel.Error, "Error executing service method {Method}")]
+    public static partial void LogErrorWatchingResources(this ILogger logger, string method, Exception ex);
 }
