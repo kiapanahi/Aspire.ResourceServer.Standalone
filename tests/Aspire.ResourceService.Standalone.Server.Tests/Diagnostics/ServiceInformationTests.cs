@@ -1,10 +1,10 @@
-﻿using Aspire.ResourceServer.Standalone.Server.Diagnostics;
+﻿using Aspire.ResourceService.Standalone.Server.Diagnostics;
 
 using FluentAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Aspire.ResourceServer.Standalone.Server.Tests.Diagnostics;
+namespace Aspire.ResourceService.Standalone.Server.Tests.Diagnostics;
 
 public sealed class ServiceInformationTests
 {
@@ -16,7 +16,7 @@ public sealed class ServiceInformationTests
 
 
         sut.GetServiceInformation().Version.Should().Be("0.0.1");
-        sut.GetServiceInformation().Name.Should().Be("Aspire.ResourceServer.Standalone.Server");
+        sut.GetServiceInformation().Name.Should().Be("Aspire.ResourceService.Standalone.Server");
     }
 
     [Fact]

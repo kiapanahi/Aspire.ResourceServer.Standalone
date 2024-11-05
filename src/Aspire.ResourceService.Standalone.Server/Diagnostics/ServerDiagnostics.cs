@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Reflection;
 
-namespace Aspire.ResourceServer.Standalone.Server.Diagnostics;
+namespace Aspire.ResourceService.Standalone.Server.Diagnostics;
 
 internal static class ServerDiagnostics
 {

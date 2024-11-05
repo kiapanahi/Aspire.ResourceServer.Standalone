@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace Aspire.ResourceServer.Standalone.Server.Diagnostics;
+namespace Aspire.ResourceService.Standalone.Server.Diagnostics;
 
 internal static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddServiceInformationProvider(this IServiceCollection services)
     {
-        return AddServiceInformationProvider<AssemblyServiceInformationProvider>(services);
+        return services.AddServiceInformationProvider<AssemblyServiceInformationProvider>();
     }
 
     public static IServiceCollection AddServiceInformationProvider<T>(this IServiceCollection services)

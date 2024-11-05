@@ -1,4 +1,4 @@
-﻿namespace Aspire.ResourceServer.Standalone.Server.Diagnostics;
+﻿namespace Aspire.ResourceService.Standalone.Server.Diagnostics;
 
 public interface IServiceInformationProvider
 {

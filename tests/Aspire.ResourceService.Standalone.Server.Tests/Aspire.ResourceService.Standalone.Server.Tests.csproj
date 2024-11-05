@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\server\Server.csproj" />
+    <ProjectReference Include="..\..\src\Aspire.ResourceService.Standalone.Server\Aspire.ResourceService.Standalone.Server.csproj" />
   </ItemGroup>
 
   <ItemGroup>

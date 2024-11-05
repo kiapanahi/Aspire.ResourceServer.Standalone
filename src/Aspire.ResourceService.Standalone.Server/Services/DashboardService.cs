@@ -1,6 +1,6 @@
-using Aspire.ResourceServer.Standalone.ResourceLocator;
-using Aspire.ResourceServer.Standalone.Server.Diagnostics;
 using Aspire.ResourceService.Proto.V1;
+using Aspire.ResourceService.Standalone.ResourceProvider;
+using Aspire.ResourceService.Standalone.Server.Diagnostics;
 
 using Grpc.Core;
 
