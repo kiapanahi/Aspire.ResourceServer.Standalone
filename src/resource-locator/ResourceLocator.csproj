@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <RootNamespace>$(RootNamespace).ResourceLocator</RootNamespace>
+    <NoWarn>$(NoWarn); CA1848</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
