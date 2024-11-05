@@ -1,22 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-      <RootNamespace>$(RootNamespace).ResourceLocator</RootNamespace>
+    <RootNamespace>$(RootNamespace).ResourceLocator</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-      <Protobuf Include="..\proto\resource_service.proto" GrpcServices="None">
-          <Access>public</Access>
-          <Link>Protos\resource_service.proto</Link>
-      </Protobuf>
+    <Protobuf Include="..\proto\resource_service.proto" GrpcServices="None" >
+      <Access>public</Access>
+      <Link>Protos\resource_service.proto</Link>
+    </Protobuf>
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Docker.DotNet" Version="3.125.15" />
     <PackageReference Include="Google.Protobuf" Version="3.28.3" />
     <PackageReference Include="Grpc.Tools" Version="2.67.0">
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
 
