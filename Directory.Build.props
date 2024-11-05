@@ -9,7 +9,7 @@
     <AnalysisMode>Recommended</AnalysisMode>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
-    <NoWarn>$(NoWarn); IDE0290</NoWarn>
+    <NoWarn>$(NoWarn); IDE0290; CS0436</NoWarn>
 
     <RootNamespace>Aspire.ResourceServer.Standalone</RootNamespace>
 
