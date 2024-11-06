@@ -1,8 +1,14 @@
-﻿
-namespace Aspire.ResourceServer.Standalone.ResourceLocator;
+﻿namespace Aspire.ResourceService.Standalone.ResourceProvider;
+
 internal sealed partial class DockerResourceProvider
 {
     private bool _disposedValue;
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     private void Dispose(bool disposing)
     {
@@ -15,11 +21,5 @@ internal sealed partial class DockerResourceProvider
 
             _disposedValue = true;
         }
-    }
-
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
     }
 }

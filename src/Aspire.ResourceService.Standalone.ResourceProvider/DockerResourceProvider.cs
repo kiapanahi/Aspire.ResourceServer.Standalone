@@ -1,63 +1,48 @@
-﻿using Aspire.ResourceService.Standalone.ResourceProvider;
+﻿using Aspire.ResourceService.Proto.V1;
 
 using Docker.DotNet;
 using Docker.DotNet.Models;
 
-using Microsoft.Extensions.Logging;
+using Google.Protobuf.WellKnownTypes;
 
-using AspireResouce = Aspire.ResourceService.Proto.V1.Resource;
+using AspireResource = Aspire.ResourceService.Proto.V1.Resource;
 
-namespace Aspire.ResourceServer.Standalone.ResourceLocator;
+namespace Aspire.ResourceService.Standalone.ResourceProvider;
 
 internal sealed partial class DockerResourceProvider : IResourceProvider
 {
-    private readonly ILogger<DockerResourceProvider> _logger;
-    private readonly DockerClient _dockerClient;
+    private readonly IDockerClient _dockerClient;
 
-    public DockerResourceProvider(ILogger<DockerResourceProvider> logger)
+    public DockerResourceProvider(IDockerClient dockerClient)
     {
-        _logger = logger;
-        _dockerClient = new DockerClientConfiguration().CreateClient();
+        _dockerClient = dockerClient;
     }
-    public async Task<IEnumerable<AspireResouce>> GetResourcesAsync()
+
+    public async Task<IEnumerable<AspireResource>> GetResourcesAsync()
     {
         var containers = await _dockerClient.Containers
             .ListContainersAsync(new ContainersListParameters())
             .ConfigureAwait(false);
 
-        return containers.Select(container => new AspireResouce
+        List<AspireResource> resources = [];
+        foreach (var container in containers)
         {
+            var ar = new AspireResource
+            {
+                CreatedAt = Timestamp.FromDateTime(container.Created),
+                State = container.State,
+                DisplayName = container.Names.First(),
+                ResourceType = "Container",
+                Name = string.Join('|', container.Names),
+                Uid = container.ID
+            };
 
-            DisplayName = container.Names.FirstOrDefault(),
-            Properties = {
-                new ResourceService.Proto.V1.ResourceProperty {
-                    Name = "image",
-                    DisplayName = "Image Name",
-                    Value = new Google.Protobuf.WellKnownTypes.Value {
-                        StringValue = container.Image
-                    }
-                },
-                new ResourceService.Proto.V1.ResourceProperty {
-                    Name = "container_id",
-                    DisplayName = "Container ID",
-                    Value = new Google.Protobuf.WellKnownTypes.Value {
-                        StringValue = container.ID
-                    }
-                },
-                new ResourceService.Proto.V1.ResourceProperty {
-                    Name = "ports",
-                    DisplayName = "Ports",
-                    Value = new Google.Protobuf.WellKnownTypes.Value {
-                        StringValue = string.Join(',', container.Ports.Select(s => $"{s.PrivatePort}:{s.PublicPort}"))
-                    }
-                }
-            },
-            Name = container.Names.FirstOrDefault(),
-            CreatedAt = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(container.Created),
-            State = container.State,
-            ResourceType = "container",
-            Uid = container.ID
-        });
+            ar.Urls.Add(container.Ports.Where(p => !string.IsNullOrEmpty(p.IP))
+                .Select(s => new Url { FullUrl = $"{s.IP}:{s.PublicPort}" }));
+
+            resources.Add(ar);
+        }
+
+        return resources;
     }
-
 }

@@ -9,10 +9,10 @@ internal static class ServerDiagnostics
 
     public static readonly string ServiceVersion;
 
+    public static ActivitySource ServerActivitySource = new(Constants.ServiceName, ServiceVersion);
+
     static ServerDiagnostics()
     {
         ServiceVersion = Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
     }
-
-    public static ActivitySource ServerActivitySource = new(Constants.ServiceName, version: ServiceVersion);
 }

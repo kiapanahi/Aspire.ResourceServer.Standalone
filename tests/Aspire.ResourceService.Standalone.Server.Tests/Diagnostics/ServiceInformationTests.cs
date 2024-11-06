@@ -8,7 +8,6 @@ namespace Aspire.ResourceService.Standalone.Server.Tests.Diagnostics;
 
 public sealed class ServiceInformationTests
 {
-
     [Fact]
     public void VersionGuard()
     {
@@ -39,7 +38,8 @@ public sealed class ServiceInformationTests
 
         var @base = sp.GetRequiredService<IServiceInformationProvider>();
 
-        foreach (var instance in Enumerable.Range(1, 10).Select(_ => sp.GetRequiredService<IServiceInformationProvider>()))
+        foreach (var instance in Enumerable.Range(1, 10)
+                     .Select(_ => sp.GetRequiredService<IServiceInformationProvider>()))
         {
             instance.Should().BeSameAs(@base);
             instance.Should().BeEquivalentTo(@base);
@@ -67,7 +67,7 @@ public sealed class ServiceInformationTests
     {
         public ServiceInformation GetServiceInformation()
         {
-            return new("mock-name", "mock-version");
+            return new ServiceInformation("mock-name", "mock-version");
         }
     }
 }
