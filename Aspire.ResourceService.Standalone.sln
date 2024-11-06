@@ -27,11 +27,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Compose", "Compose", "{1E7C
 		compose\compose.yaml = compose\compose.yaml
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.ResourceService.Standalone.ResourceProvider", "D:\Projects\Contrib\GitHub\k\Aspire.ResourceServer.Standalone\src\Aspire.ResourceService.Standalone.ResourceProvider\Aspire.ResourceService.Standalone.ResourceProvider.csproj", "{12E9750C-2CC7-4854-9877-813ADBB0957A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.ResourceService.Standalone.ResourceProvider", "src\Aspire.ResourceService.Standalone.ResourceProvider\Aspire.ResourceService.Standalone.ResourceProvider.csproj", "{12E9750C-2CC7-4854-9877-813ADBB0957A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.ResourceService.Standalone.Server", "D:\Projects\Contrib\GitHub\k\Aspire.ResourceServer.Standalone\src\Aspire.ResourceService.Standalone.Server\Aspire.ResourceService.Standalone.Server.csproj", "{20984F03-BA2E-404D-A15D-6A763BCDBBAA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.ResourceService.Standalone.Server", "src\Aspire.ResourceService.Standalone.Server\Aspire.ResourceService.Standalone.Server.csproj", "{20984F03-BA2E-404D-A15D-6A763BCDBBAA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.ResourceService.Standalone.Server.Tests", "D:\Projects\Contrib\GitHub\k\Aspire.ResourceServer.Standalone\tests\Aspire.ResourceService.Standalone.Server.Tests\Aspire.ResourceService.Standalone.Server.Tests.csproj", "{7C5F1EEC-6E23-4B3B-936D-135FEB241F31}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.ResourceService.Standalone.Server.Tests", "tests\Aspire.ResourceService.Standalone.Server.Tests\Aspire.ResourceService.Standalone.Server.Tests.csproj", "{7C5F1EEC-6E23-4B3B-936D-135FEB241F31}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
