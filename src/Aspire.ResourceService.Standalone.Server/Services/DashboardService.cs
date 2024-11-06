@@ -4,9 +4,9 @@ using Aspire.ResourceService.Standalone.Server.Diagnostics;
 
 using Grpc.Core;
 
-namespace Aspire.ResourceServer.Standalone.Server.Services;
+namespace Aspire.ResourceService.Standalone.Server.Services;
 
-internal sealed class DashboardService : ResourceService.Proto.V1.DashboardService.DashboardServiceBase
+internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServiceBase
 {
     private readonly IHostApplicationLifetime _hostApplicationLifetime;
     private readonly ILogger<DashboardService> _logger;
@@ -49,7 +49,7 @@ internal sealed class DashboardService : ResourceService.Proto.V1.DashboardServi
 
             foreach (var r in resources)
             {
-                data.Resources.Add(new Resource
+                var resource = new Resource
                 {
                     DisplayName = r.DisplayName,
                     Name = r.Name,
@@ -57,7 +57,12 @@ internal sealed class DashboardService : ResourceService.Proto.V1.DashboardServi
                     State = r.State,
                     ResourceType = "container",
                     Uid = r.Uid
-                });
+                };
+                resource.Urls.Add(r.Urls.Select(u => new Url
+                {
+                    Name = u.Name, FullUrl = u.FullUrl, IsInternal = u.IsInternal
+                }));
+                data.Resources.Add(resource);
             }
 
             await responseStream.WriteAsync(new WatchResourcesUpdate { InitialData = data }, cts.Token)

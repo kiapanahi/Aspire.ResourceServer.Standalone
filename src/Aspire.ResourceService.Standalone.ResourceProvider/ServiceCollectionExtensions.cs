@@ -1,4 +1,4 @@
-﻿using Aspire.ResourceServer.Standalone.ResourceLocator;
+﻿using Docker.DotNet;
 
 using Microsoft.Extensions.DependencyInjection;
 
@@ -8,6 +8,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddResourceProvider(this IServiceCollection services)
     {
+        services.AddSingleton<IDockerClient>(_ => new DockerClientConfiguration().CreateClient());
         services.AddSingleton<IResourceProvider, DockerResourceProvider>();
 
         return services;

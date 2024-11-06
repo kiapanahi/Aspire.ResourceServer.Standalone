@@ -1,4 +1,4 @@
-﻿namespace Aspire.ResourceServer.Standalone.ResourceLocator;
+﻿namespace Aspire.ResourceService.Standalone.ResourceProvider;
 
 internal sealed partial class DockerResourceProvider
 {
