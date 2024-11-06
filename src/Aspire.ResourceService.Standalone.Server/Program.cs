@@ -1,4 +1,3 @@
-using Aspire.ResourceServer.Standalone.Server.Services;
 using Aspire.ResourceService.Standalone.ResourceProvider;
 using Aspire.ResourceService.Standalone.Server.Diagnostics;
 
@@ -14,7 +13,6 @@ builder.Services.AddGrpcReflection();
 
 var app = builder.Build();
 
-app.MapGrpcService<DashboardService>();
 
 if (app.Environment.IsDevelopment())
 {
