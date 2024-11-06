@@ -6,12 +6,12 @@ using Grpc.Core;
 
 namespace Aspire.ResourceServer.Standalone.Server.Services;
 
-internal sealed class DashboardService : Aspire.ResourceService.Proto.V1.DashboardService.DashboardServiceBase
+internal sealed class DashboardService : ResourceService.Proto.V1.DashboardService.DashboardServiceBase
 {
-    private readonly IServiceInformationProvider _serviceInformationProvider;
-    private readonly IResourceProvider _resourceProvider;
     private readonly IHostApplicationLifetime _hostApplicationLifetime;
     private readonly ILogger<DashboardService> _logger;
+    private readonly IResourceProvider _resourceProvider;
+    private readonly IServiceInformationProvider _serviceInformationProvider;
 
     public DashboardService(IServiceInformationProvider serviceInformationProvider,
         IResourceProvider resourceProvider,
@@ -38,7 +38,8 @@ internal sealed class DashboardService : Aspire.ResourceService.Proto.V1.Dashboa
     public override async Task WatchResources(WatchResourcesRequest request,
         IServerStreamWriter<WatchResourcesUpdate> responseStream, ServerCallContext context)
     {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostApplicationLifetime.ApplicationStopping, context.CancellationToken);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostApplicationLifetime.ApplicationStopping,
+            context.CancellationToken);
 
         try
         {
@@ -59,7 +60,8 @@ internal sealed class DashboardService : Aspire.ResourceService.Proto.V1.Dashboa
                 });
             }
 
-            await responseStream.WriteAsync(new() { InitialData = data }, cts.Token).ConfigureAwait(false);
+            await responseStream.WriteAsync(new WatchResourcesUpdate { InitialData = data }, cts.Token)
+                .ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cts.Token.IsCancellationRequested)
         {
