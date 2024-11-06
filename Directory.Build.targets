@@ -1,5 +1,5 @@
 <Project>
-    <!-- See https://aka.ms/dotnet/msbuild/customize for more details on customizing your build -->
-    <Target Name="CustomAfterBuildTarget" AfterTargets="Build">
-    </Target>
+  <!-- See https://aka.ms/dotnet/msbuild/customize for more details on customizing your build -->
+  <Target Name="CustomAfterBuildTarget" AfterTargets="Build">
+  </Target>
 </Project>
