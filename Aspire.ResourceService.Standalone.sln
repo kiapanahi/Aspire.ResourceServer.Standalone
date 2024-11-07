@@ -27,8 +27,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Compose", "Compose", "{1E7C
 		compose\compose.yaml = compose\compose.yaml
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.ResourceService.Standalone.ResourceProvider", "src\Aspire.ResourceService.Standalone.ResourceProvider\Aspire.ResourceService.Standalone.ResourceProvider.csproj", "{12E9750C-2CC7-4854-9877-813ADBB0957A}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.ResourceService.Standalone.Server", "src\Aspire.ResourceService.Standalone.Server\Aspire.ResourceService.Standalone.Server.csproj", "{20984F03-BA2E-404D-A15D-6A763BCDBBAA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.ResourceService.Standalone.Server.Tests", "tests\Aspire.ResourceService.Standalone.Server.Tests\Aspire.ResourceService.Standalone.Server.Tests.csproj", "{7C5F1EEC-6E23-4B3B-936D-135FEB241F31}"
@@ -39,10 +37,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{12E9750C-2CC7-4854-9877-813ADBB0957A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{12E9750C-2CC7-4854-9877-813ADBB0957A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{12E9750C-2CC7-4854-9877-813ADBB0957A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{12E9750C-2CC7-4854-9877-813ADBB0957A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{20984F03-BA2E-404D-A15D-6A763BCDBBAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{20984F03-BA2E-404D-A15D-6A763BCDBBAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{20984F03-BA2E-404D-A15D-6A763BCDBBAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -57,7 +51,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{814C273E-ECD0-492E-9F97-494DF8352023} = {6E405F73-722B-43F6-808E-4CB16FA3ADB0}
-		{12E9750C-2CC7-4854-9877-813ADBB0957A} = {6E405F73-722B-43F6-808E-4CB16FA3ADB0}
 		{20984F03-BA2E-404D-A15D-6A763BCDBBAA} = {6E405F73-722B-43F6-808E-4CB16FA3ADB0}
 		{7C5F1EEC-6E23-4B3B-936D-135FEB241F31} = {E5A71AF7-6E1E-45D9-B686-68D23454F7FF}
 	EndGlobalSection
