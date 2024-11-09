@@ -1,6 +1,7 @@
+using Aspire.Dashboard.Model;
 using Aspire.ResourceService.Proto.V1;
-using Aspire.ResourceService.Standalone.ResourceProvider;
 using Aspire.ResourceService.Standalone.Server.Diagnostics;
+using Aspire.ResourceService.Standalone.Server.ResourceProviders;
 
 using Grpc.Core;
 
@@ -55,7 +56,7 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
                     Name = r.Name,
                     CreatedAt = r.CreatedAt,
                     State = r.State,
-                    ResourceType = "container",
+                    ResourceType = KnownResourceTypes.Container,
                     Uid = r.Uid
                 };
                 resource.Urls.Add(r.Urls.Select(u => new Url
@@ -65,7 +66,8 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
                 data.Resources.Add(resource);
             }
 
-            await responseStream.WriteAsync(new WatchResourcesUpdate { InitialData = data }, cts.Token)
+            await responseStream
+                .WriteAsync(new WatchResourcesUpdate { InitialData = data }, cts.Token)
                 .ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cts.Token.IsCancellationRequested)

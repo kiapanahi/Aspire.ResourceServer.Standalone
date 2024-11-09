@@ -1,5 +1,5 @@
-using Aspire.ResourceService.Standalone.ResourceProvider;
 using Aspire.ResourceService.Standalone.Server.Diagnostics;
+using Aspire.ResourceService.Standalone.Server.ResourceProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
