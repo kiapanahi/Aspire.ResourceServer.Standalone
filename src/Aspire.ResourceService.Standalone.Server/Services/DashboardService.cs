@@ -47,24 +47,25 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
             var resources = await _resourceProvider.GetResourcesAsync().ConfigureAwait(false);
 
             var data = new InitialResourceData();
-
-            foreach (var r in resources)
-            {
-                var resource = new Resource
-                {
-                    DisplayName = r.DisplayName,
-                    Name = r.Name,
-                    CreatedAt = r.CreatedAt,
-                    State = r.State,
-                    ResourceType = KnownResourceTypes.Container,
-                    Uid = r.Uid
-                };
-                resource.Urls.Add(r.Urls.Select(u => new Url
-                {
-                    Name = u.Name, FullUrl = u.FullUrl, IsInternal = u.IsInternal
-                }));
-                data.Resources.Add(resource);
-            }
+            data.Resources.Add(resources);
+            // foreach (var r in resources)
+            // {
+            //     var resource = new Resource
+            //     {
+            //         DisplayName = r.DisplayName,
+            //         Name = r.Name,
+            //         CreatedAt = r.CreatedAt,
+            //         State = r.State,
+            //         ResourceType = KnownResourceTypes.Container,
+            //         Uid = r.Uid,
+            //         Urls = r.Urls
+            //     };
+            //     resource.Urls.Add(r.Urls.Select(u => new Url
+            //     {
+            //         Name = u.Name, FullUrl = u.FullUrl, IsInternal = u.IsInternal
+            //     }));
+            //     data.Resources.Add(resource);
+            // }
 
             await responseStream
                 .WriteAsync(new WatchResourcesUpdate { InitialData = data }, cts.Token)

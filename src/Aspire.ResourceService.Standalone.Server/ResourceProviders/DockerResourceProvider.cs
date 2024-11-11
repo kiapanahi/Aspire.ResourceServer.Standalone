@@ -10,10 +10,12 @@ namespace Aspire.ResourceService.Standalone.Server.ResourceProviders;
 internal sealed partial class DockerResourceProvider : IResourceProvider
 {
     private readonly IDockerClient _dockerClient;
+    private readonly ILogger<DockerResourceProvider> _logger;
 
-    public DockerResourceProvider(IDockerClient dockerClient)
+    public DockerResourceProvider(IDockerClient dockerClient, ILogger<DockerResourceProvider> logger)
     {
         _dockerClient = dockerClient;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<Resource>> GetResourcesAsync()
@@ -34,9 +36,20 @@ internal sealed partial class DockerResourceProvider : IResourceProvider
                 Name = string.Join('|', container.Names),
                 Uid = container.ID
             };
+            foreach (var (network, settings) in container.NetworkSettings.Networks)
+            {
+#pragma warning disable CA1848
+                _logger.LogInformation("Net: {Network} => Settings: {Settings}", network, settings);
+#pragma warning restore CA1848
+            }
 
             ar.Urls.Add(container.Ports.Where(p => !string.IsNullOrEmpty(p.IP))
-                .Select(s => new Url { FullUrl = $"{s.IP}:{s.PublicPort}" }));
+                .Select(s => new Url
+                {
+                    IsInternal = false,
+                    Name = $"https://{s.IP}:{s.PublicPort}",
+                    FullUrl = $"https://{s.IP}:{s.PublicPort}"
+                }));
 
             resources.Add(ar);
         }
