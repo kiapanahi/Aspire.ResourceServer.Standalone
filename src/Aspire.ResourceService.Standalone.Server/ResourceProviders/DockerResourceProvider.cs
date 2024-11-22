@@ -19,7 +19,7 @@ internal sealed partial class DockerResourceProvider : IResourceProvider
         _logger = logger;
     }
 
-    public async Task<IEnumerable<Resource>> GetResourcesAsync()
+    public async Task<List<Resource>> GetResourcesAsync()
     {
         var containers = await _dockerClient.Containers
             .ListContainersAsync(new ContainersListParameters())

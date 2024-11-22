@@ -4,5 +4,5 @@ namespace Aspire.ResourceService.Standalone.Server.ResourceProviders;
 
 internal interface IResourceProvider
 {
-    Task<IEnumerable<Resource>> GetResourcesAsync();
+    Task<List<Resource>> GetResourcesAsync();
 }
