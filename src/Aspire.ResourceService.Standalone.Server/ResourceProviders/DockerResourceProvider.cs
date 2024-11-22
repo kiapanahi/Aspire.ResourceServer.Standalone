@@ -11,12 +11,10 @@ namespace Aspire.ResourceService.Standalone.Server.ResourceProviders;
 internal sealed partial class DockerResourceProvider : IResourceProvider
 {
     private readonly IDockerClient _dockerClient;
-    private readonly ILogger<DockerResourceProvider> _logger;
 
-    public DockerResourceProvider(IDockerClient dockerClient, ILogger<DockerResourceProvider> logger)
+    public DockerResourceProvider(IDockerClient dockerClient)
     {
         _dockerClient = dockerClient;
-        _logger = logger;
     }
 
     public async Task<List<Resource>> GetResourcesAsync()
