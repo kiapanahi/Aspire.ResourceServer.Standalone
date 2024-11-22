@@ -33,7 +33,7 @@ internal sealed partial class DockerResourceProvider : IResourceProvider
                 CreatedAt = Timestamp.FromDateTime(container.Created),
                 State = container.State,
                 DisplayName = container.Names.First(),
-                ResourceType = "Container",
+                ResourceType = KnownResourceTypes.Container,
                 Name = string.Join('|', container.Names),
                 Uid = container.ID
             };
