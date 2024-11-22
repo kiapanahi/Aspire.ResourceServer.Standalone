@@ -1,3 +1,4 @@
+using Aspire.Dashboard.Model;
 using Aspire.ResourceService.Proto.V1;
 
 using Docker.DotNet;
@@ -36,12 +37,6 @@ internal sealed partial class DockerResourceProvider : IResourceProvider
                 Name = string.Join('|', container.Names),
                 Uid = container.ID
             };
-            foreach (var (network, settings) in container.NetworkSettings.Networks)
-            {
-#pragma warning disable CA1848
-                _logger.LogInformation("Net: {Network} => Settings: {Settings}", network, settings);
-#pragma warning restore CA1848
-            }
 
             ar.Urls.Add(container.Ports.Where(p => !string.IsNullOrEmpty(p.IP))
                 .Select(s => new Url
