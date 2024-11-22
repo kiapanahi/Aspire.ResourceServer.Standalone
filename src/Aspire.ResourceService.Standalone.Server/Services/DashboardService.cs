@@ -1,6 +1,6 @@
 using Aspire.ResourceService.Proto.V1;
-using Aspire.ResourceService.Standalone.ResourceProvider;
 using Aspire.ResourceService.Standalone.Server.Diagnostics;
+using Aspire.ResourceService.Standalone.Server.ResourceProviders;
 
 using Grpc.Core;
 
@@ -43,30 +43,21 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
 
         try
         {
+            _logger.GettingResourcesFromResourceProvider();
             var resources = await _resourceProvider.GetResourcesAsync().ConfigureAwait(false);
+            _logger.GotResourcesFromResourceProvider(resources.Count);
 
+            _logger.CompilingInitialResources();
             var data = new InitialResourceData();
+            data.Resources.Add(resources);
+            _logger.InitialResourcesCompiled();
 
-            foreach (var r in resources)
-            {
-                var resource = new Resource
-                {
-                    DisplayName = r.DisplayName,
-                    Name = r.Name,
-                    CreatedAt = r.CreatedAt,
-                    State = r.State,
-                    ResourceType = "container",
-                    Uid = r.Uid
-                };
-                resource.Urls.Add(r.Urls.Select(u => new Url
-                {
-                    Name = u.Name, FullUrl = u.FullUrl, IsInternal = u.IsInternal
-                }));
-                data.Resources.Add(resource);
-            }
-
-            await responseStream.WriteAsync(new WatchResourcesUpdate { InitialData = data }, cts.Token)
+            _logger.WritingInitialResourcesToStream();
+            await responseStream
+                .WriteAsync(new WatchResourcesUpdate { InitialData = data }, cts.Token)
                 .ConfigureAwait(false);
+            _logger.InitialResourcesWroteToStreamSuccessfully();
+
         }
         catch (OperationCanceledException) when (cts.Token.IsCancellationRequested)
         {
@@ -90,6 +81,36 @@ internal static partial class Log
     [LoggerMessage(LogLevel.Trace, "Returning application information")]
     public static partial void ReturningApplicationInformation(this ILogger logger);
 
-    [LoggerMessage(LogLevel.Error, "Error executing service method {Method}")]
+    [LoggerMessage(Events.PreparingToGetResources, LogLevel.Trace, "Preparing to get resources from the resource provider")]
+    public static partial void GettingResourcesFromResourceProvider(this ILogger logger);
+
+    [LoggerMessage(Events.ResourcesReceived, LogLevel.Trace, "Received {Count} resources from resource provider")]
+    public static partial void GotResourcesFromResourceProvider(this ILogger logger, int count);
+
+    [LoggerMessage(Events.CompilingInitialResources, LogLevel.Trace, "Preparing to compile initial resources")]
+    public static partial void CompilingInitialResources(this ILogger logger);
+
+    [LoggerMessage(Events.InitialResourcesCompiled, LogLevel.Trace, "Initial resources compiled")]
+    public static partial void InitialResourcesCompiled(this ILogger logger);
+
+    [LoggerMessage(Events.SendingInitialResources, LogLevel.Trace, "Preparing to send initial resources")]
+    public static partial void WritingInitialResourcesToStream(this ILogger logger);
+
+    [LoggerMessage(Events.InitialResourcesSent, LogLevel.Trace, "Initial resources sent")]
+    public static partial void InitialResourcesWroteToStreamSuccessfully(this ILogger logger);
+
+
+    [LoggerMessage(Events.ErrorWatchingResources, LogLevel.Error, "Error executing service method {Method}")]
     public static partial void LogErrorWatchingResources(this ILogger logger, string method, Exception ex);
+
+    private struct Events
+    {
+        internal const int PreparingToGetResources = 101;
+        internal const int ResourcesReceived = 102;
+        internal const int CompilingInitialResources = 103;
+        internal const int InitialResourcesCompiled = 104;
+        internal const int SendingInitialResources = 105;
+        internal const int InitialResourcesSent = 106;
+        internal const int ErrorWatchingResources = 501;
+    }
 }

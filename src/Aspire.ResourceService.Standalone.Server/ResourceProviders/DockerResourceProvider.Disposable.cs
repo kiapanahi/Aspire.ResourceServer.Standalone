@@ -1,6 +1,6 @@
-﻿namespace Aspire.ResourceService.Standalone.ResourceProvider;
+namespace Aspire.ResourceService.Standalone.Server.ResourceProviders;
 
-internal sealed partial class DockerResourceProvider
+internal sealed partial class DockerResourceProvider : IDisposable
 {
     private bool _disposedValue;
 

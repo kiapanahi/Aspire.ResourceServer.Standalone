@@ -1,13 +1,12 @@
-﻿using Aspire.ResourceService.Proto.V1;
+using Aspire.Dashboard.Model;
+using Aspire.ResourceService.Proto.V1;
 
 using Docker.DotNet;
 using Docker.DotNet.Models;
 
 using Google.Protobuf.WellKnownTypes;
 
-using AspireResource = Aspire.ResourceService.Proto.V1.Resource;
-
-namespace Aspire.ResourceService.Standalone.ResourceProvider;
+namespace Aspire.ResourceService.Standalone.Server.ResourceProviders;
 
 internal sealed partial class DockerResourceProvider : IResourceProvider
 {
@@ -18,27 +17,32 @@ internal sealed partial class DockerResourceProvider : IResourceProvider
         _dockerClient = dockerClient;
     }
 
-    public async Task<IEnumerable<AspireResource>> GetResourcesAsync()
+    public async Task<List<Resource>> GetResourcesAsync()
     {
         var containers = await _dockerClient.Containers
             .ListContainersAsync(new ContainersListParameters())
             .ConfigureAwait(false);
 
-        List<AspireResource> resources = [];
+        List<Resource> resources = [];
         foreach (var container in containers)
         {
-            var ar = new AspireResource
+            var ar = new Resource
             {
                 CreatedAt = Timestamp.FromDateTime(container.Created),
                 State = container.State,
                 DisplayName = container.Names.First(),
-                ResourceType = "Container",
+                ResourceType = KnownResourceTypes.Container,
                 Name = string.Join('|', container.Names),
                 Uid = container.ID
             };
 
             ar.Urls.Add(container.Ports.Where(p => !string.IsNullOrEmpty(p.IP))
-                .Select(s => new Url { FullUrl = $"{s.IP}:{s.PublicPort}" }));
+                .Select(s => new Url
+                {
+                    IsInternal = false,
+                    Name = $"https://{s.IP}:{s.PublicPort}",
+                    FullUrl = $"https://{s.IP}:{s.PublicPort}"
+                }));
 
             resources.Add(ar);
         }
