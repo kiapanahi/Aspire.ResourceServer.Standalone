@@ -2,6 +2,8 @@
 
 > Based on [this](https://github.com/dotnet/aspire/discussions/4440) thread.
 
+> Related [GitHub discussion](https://github.com/dotnet/aspire/discussions/6772) in main [dotnet/aspire](https://github.com/dotnet/aspire) repo.
+
 
 ## Todo
 
