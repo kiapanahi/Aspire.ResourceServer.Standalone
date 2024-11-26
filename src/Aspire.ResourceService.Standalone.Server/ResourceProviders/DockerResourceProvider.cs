@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 using Aspire.Dashboard.Model;
 using Aspire.ResourceService.Proto.V1;
 
@@ -48,5 +50,30 @@ internal sealed partial class DockerResourceProvider : IResourceProvider
         }
 
         return resources;
+    }
+
+    public async IAsyncEnumerable<string> GerResourceLogs(string resourceName, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var containers = await _dockerClient.Containers.ListContainersAsync(new ContainersListParameters(), cancellationToken);
+
+        var container = containers.Single(c => c.Names.Contains(resourceName));
+
+        using var stream = await _dockerClient.Containers
+            .GetContainerLogsAsync(container.ID, false, new ContainerLogsParameters()
+            {
+                ShowStdout = true,
+                ShowStderr = true
+            }, cancellationToken)
+            .ConfigureAwait(false);
+
+        var (output, error) = await stream.ReadOutputToEndAsync(cancellationToken).ConfigureAwait(false);
+
+        var lines = output.Split(Environment.NewLine).Union(error.Split(Environment.NewLine));
+
+        foreach (var line in lines)
+        {
+            yield return line;
+        }
+
     }
 }
