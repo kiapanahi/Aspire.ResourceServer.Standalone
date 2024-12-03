@@ -3,14 +3,12 @@ version: '3.8'
 services:
   redis:
     image: redis:latest
-    container_name: dev_redis
     ports:
       - "6379:6379"
     networks:
       - dev_network
   rabbitmq:
     image: rabbitmq:management
-    container_name: dev_rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -18,7 +16,6 @@ services:
       - dev_network
   mongodb:
     image: mongo:latest
-    container_name: dev_mongodb
     ports:
       - "27017:27017"
     volumes:
@@ -31,7 +28,6 @@ services:
       DASHBOARD__FRONTEND__AUTHMODE: "Unsecured"
       DASHBOARD__RESOURCESERVICECLIENT__URL: "http://host.docker.internal:7007"
       DASHBOARD__RESOURCESERVICECLIENT__AUTHMODE: "Unsecured"
-    container_name: dev_aspire_dashboard
     ports:
       - "18888:18888"
       - "4317:18889"
