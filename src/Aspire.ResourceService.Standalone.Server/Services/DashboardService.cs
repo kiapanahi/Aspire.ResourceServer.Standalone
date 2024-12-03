@@ -73,10 +73,42 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
             throw;
         }
     }
+
+    public override async Task WatchResourceConsoleLogs(WatchResourceConsoleLogsRequest request,
+        IServerStreamWriter<WatchResourceConsoleLogsUpdate> responseStream, ServerCallContext context)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostApplicationLifetime.ApplicationStopping,
+            context.CancellationToken);
+
+        var update = new WatchResourceConsoleLogsUpdate();
+        var lineNumber = 0;
+        while (!context.CancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                await foreach (var log in _resourceProvider.GerResourceLogs(request.ResourceName, cts.Token))
+                {
+                    update.LogLines.Add(new ConsoleLogLine { Text = log, IsStdErr = false, LineNumber = ++lineNumber });
+                    await responseStream.WriteAsync(update, cts.Token).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException) when (cts.Token.IsCancellationRequested)
+            {
+                // Ignore cancellation and just return.
+            }
+            catch (IOException) when (cts.Token.IsCancellationRequested)
+            {
+                // Ignore cancellation and just return. Cancelled writes throw IOException.
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+    }
 }
 
-// ReSharper disable once UnusedType.Global
-internal static partial class Log
+internal static partial class WatchResourcesLogs
 {
     [LoggerMessage(LogLevel.Trace, "Returning application information")]
     public static partial void ReturningApplicationInformation(this ILogger logger);
