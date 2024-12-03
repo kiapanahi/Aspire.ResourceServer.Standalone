@@ -25,7 +25,7 @@ services:
   aspire_dashboard:
     image: mcr.microsoft.com/dotnet/aspire-dashboard:8.2
     environment:
-      DASHBOARD__FRONTEND__AUTHMODE: "Unsecured"
+      # DASHBOARD__FRONTEND__AUTHMODE: "Unsecured"
       DASHBOARD__RESOURCESERVICECLIENT__URL: "http://host.docker.internal:7007"
       DASHBOARD__RESOURCESERVICECLIENT__AUTHMODE: "Unsecured"
     ports:
