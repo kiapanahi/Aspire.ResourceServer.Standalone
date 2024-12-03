@@ -95,7 +95,7 @@ internal sealed partial class DockerResourceProvider : IResourceProvider
         {
             await _syncRoot.WaitAsync();
             var c = await _dockerClient.Containers
-                .ListContainersAsync(new ContainersListParameters())
+                .ListContainersAsync(new ContainersListParameters(), CancellationToken.None)
                 .ConfigureAwait(false);
 
             _dockerContainers.AddRange(c);

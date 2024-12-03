@@ -1,6 +1,8 @@
 // Copied from and inspired by .NET Aspire's KnownProperties.cs
 // https://github.com/dotnet/aspire/blob/main/src/Shared/Model/KnownProperties.cs
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Aspire.Dashboard.Model;
 
 /// <summary>
@@ -10,6 +12,7 @@ namespace Aspire.Dashboard.Model;
 /// Used as keys in the "properties" dictionary on resource snapshots and view models.
 /// Should be compared using <see cref="StringComparer.Ordinal"/>.
 /// </remarks>
+[ExcludeFromCodeCoverage]
 internal static class KnownProperties
 {
     public static class Resource
