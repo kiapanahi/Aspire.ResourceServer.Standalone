@@ -8,7 +8,7 @@
 ## Todo
 
 - [x] Standalone resource server
-- [ ] Collecting external containers' logs
+- [x] Collecting external containers' logs
 - [ ] Handling commands to external containers
 
 ## Test environment (manual)
