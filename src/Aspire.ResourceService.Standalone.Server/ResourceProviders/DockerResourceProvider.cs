@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Threading.Channels;
 
 using Aspire.Dashboard.Model;
 using Aspire.ResourceService.Proto.V1;
@@ -58,21 +59,27 @@ internal sealed partial class DockerResourceProvider : IResourceProvider
 
         var container = containers.Single(c => c.Names.Contains(resourceName));
 
-        using var stream = await _dockerClient.Containers
-            .GetContainerLogsAsync(container.ID, false, new ContainerLogsParameters()
+        var notificationChannel = Channel.CreateUnbounded<string>();
+
+        void WriteToChannel(string log)
+        {
+            notificationChannel.Writer.TryWrite(log);
+        }
+
+
+        IProgress<string> p = new Progress<string>(WriteToChannel);
+
+        _ = _dockerClient.Containers
+            .GetContainerLogsAsync(container.ID, new ContainerLogsParameters()
             {
                 ShowStdout = true,
-                ShowStderr = true
-            }, cancellationToken)
-            .ConfigureAwait(false);
+                ShowStderr = true,
+                Follow = true
+            }, cancellationToken, p);
 
-        var (output, error) = await stream.ReadOutputToEndAsync(cancellationToken).ConfigureAwait(false);
-
-        var lines = output.Split(Environment.NewLine).Union(error.Split(Environment.NewLine));
-
-        foreach (var line in lines)
+        await foreach (var logItem in notificationChannel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
         {
-            yield return line;
+            yield return logItem;
         }
 
     }
