@@ -42,8 +42,8 @@ internal sealed partial class DockerResourceProvider : IResourceProvider
                 .Select(s => new Url
                 {
                     IsInternal = false,
-                    Name = $"https://{s.IP}:{s.PublicPort}",
-                    FullUrl = $"https://{s.IP}:{s.PublicPort}"
+                    Name = $"http://{s.IP}:{s.PublicPort}",
+                    FullUrl = $"http://{s.IP}:{s.PublicPort}"
                 }));
 
             resources.Add(ar);
