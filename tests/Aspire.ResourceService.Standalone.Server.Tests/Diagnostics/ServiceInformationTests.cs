@@ -14,7 +14,7 @@ public sealed class ServiceInformationTests
         IServiceInformationProvider sut = new AssemblyServiceInformationProvider();
 
 
-        sut.GetServiceInformation().Version.Should().Be("0.2.0");
+        sut.GetServiceInformation().Version.Should().Be("0.2.1");
         sut.GetServiceInformation().Name.Should().Be("Aspire.ResourceService.Standalone.Server");
     }
 
