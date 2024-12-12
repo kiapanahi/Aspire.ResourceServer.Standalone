@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
 #pragma warning disable IDE0130 // Namespace does not match folder structure
@@ -16,6 +17,8 @@ namespace Microsoft.Extensions.Hosting;
 // To learn more about using this project, see https://aka.ms/dotnet/aspire/service-defaults
 public static class Extensions
 {
+    private const string ServiceName = "Aspire.ResourceService.Standalone.Server";
+    private static readonly string ServiceVersion = typeof(Extensions).Assembly.GetName().Version?.ToString(3) ?? "-";
     public static IHostApplicationBuilder AddServiceDefaults(this IHostApplicationBuilder builder)
     {
         builder.ConfigureOpenTelemetry();
@@ -46,11 +49,16 @@ public static class Extensions
     {
         builder.Logging.AddOpenTelemetry(logging =>
         {
+            logging.SetResourceBuilder(ResourceBuilder.CreateDefault()
+                .AddService(ServiceName, serviceVersion: ServiceVersion));
+
             logging.IncludeFormattedMessage = true;
             logging.IncludeScopes = true;
         });
 
         builder.Services.AddOpenTelemetry()
+            .ConfigureResource(rb => rb
+                .AddService(ServiceName, serviceVersion: ServiceVersion))
             .WithMetrics(metrics => metrics
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
