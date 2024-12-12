@@ -54,7 +54,8 @@ public static class Extensions
             .WithMetrics(metrics => metrics
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
-                .AddRuntimeInstrumentation())
+                .AddRuntimeInstrumentation()
+                .AddProcessInstrumentation())
             .WithTracing(tracing => tracing
                 .AddAspNetCoreInstrumentation()
                 .AddGrpcClientInstrumentation()
