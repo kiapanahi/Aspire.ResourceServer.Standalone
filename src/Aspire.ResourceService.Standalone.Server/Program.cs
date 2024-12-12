@@ -22,10 +22,9 @@ if (app.Environment.IsDevelopment())
     app.MapGrpcReflectionService();
 }
 
-app.MapGrpcService<DashboardService>();
-
 app.MapDefaultEndpoints();
 app.MapGet("/info", (IServiceInformationProvider sip) => Results.Ok(sip.GetServiceInformation()));
 
+app.MapGrpcService<DashboardService>();
 
 app.Run();
