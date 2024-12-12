@@ -4,6 +4,8 @@ using Aspire.ResourceService.Standalone.Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
+
 // Add services to the container.
 builder.Services.AddServiceInformationProvider();
 builder.Services.AddResourceProvider();
@@ -22,6 +24,7 @@ if (app.Environment.IsDevelopment())
 
 app.MapGrpcService<DashboardService>();
 
+app.MapDefaultEndpoints();
 app.MapGet("/info", (IServiceInformationProvider sip) => Results.Ok(sip.GetServiceInformation()));
 
 
