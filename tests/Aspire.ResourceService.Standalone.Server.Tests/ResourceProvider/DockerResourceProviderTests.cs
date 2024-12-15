@@ -85,7 +85,7 @@ public class DockerResourceProviderTests : IDisposable
     {
         // Arrange
         var cts = new CancellationTokenSource();
-        cts.CancelAfter(TimeSpan.FromSeconds(2));
+        cts.CancelAfter(TimeSpan.FromMilliseconds(400));
 
         var containers = new List<ContainerListResponse>
         {
