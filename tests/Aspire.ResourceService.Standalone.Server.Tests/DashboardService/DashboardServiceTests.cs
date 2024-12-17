@@ -18,17 +18,18 @@ public class DashboardServiceTests
 {
     private readonly Mock<IServiceInformationProvider> _mockServiceInformationProvider;
     private readonly Mock<IResourceProvider> _mockResourceProvider;
+    private readonly Mock<IHostApplicationLifetime> _mockHostApplicationLifetime;
     private readonly DashboardServiceImpl _dashboardService;
 
     public DashboardServiceTests()
     {
         _mockServiceInformationProvider = new Mock<IServiceInformationProvider>();
         _mockResourceProvider = new Mock<IResourceProvider>();
-        Mock<IHostApplicationLifetime> mockHostApplicationLifetime = new();
+        _mockHostApplicationLifetime = new Mock<IHostApplicationLifetime>();
         _dashboardService = new DashboardServiceImpl(
             _mockServiceInformationProvider.Object,
             _mockResourceProvider.Object,
-            mockHostApplicationLifetime.Object,
+            _mockHostApplicationLifetime.Object,
             NullLogger<DashboardServiceImpl>.Instance);
     }
 
@@ -45,7 +46,7 @@ public class DashboardServiceTests
         var context = TestServerCallContext.Create();
 
         // Act
-        var response = await _dashboardService.GetApplicationInformation(request, context).ConfigureAwait(true);
+        var response = await _dashboardService.GetApplicationInformation(request, context);
 
         // Assert
         response.ApplicationName.Should().Be(expectedName);
@@ -73,7 +74,7 @@ public class DashboardServiceTests
         responseStream.Complete();
 
         var allMessages = new List<WatchResourcesUpdate>();
-        await foreach (var message in responseStream.ReadAllAsync().WithCancellation(cts.Token).ConfigureAwait(false))
+        await foreach (var message in responseStream.ReadAllAsync())
         {
             allMessages.Add(message);
         }
@@ -105,7 +106,7 @@ public class DashboardServiceTests
         responseStream.Complete();
 
         // Assert
-        var update = await responseStream.ReadNextAsync().ConfigureAwait(true);
+        var update = await responseStream.ReadNextAsync();
         update.Should().NotBeNull();
         update!.LogLines.Should().HaveCount(2);
         update.LogLines[0].Text.Should().Be(logs[0]);
@@ -122,6 +123,6 @@ internal static class Extensions
         {
             yield return item;
         }
-        await Task.CompletedTask.ConfigureAwait(false);
+        await Task.CompletedTask.ConfigureAwait(true);
     }
 }
