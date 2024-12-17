@@ -37,7 +37,7 @@ public class TestAsyncStreamReader<T> : IAsyncStreamReader<T> where T : class
     {
         _serverCallContext.CancellationToken.ThrowIfCancellationRequested();
 
-        if (await _channel.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false) &&
+        if (await _channel.Reader.WaitToReadAsync(cancellationToken) &&
             _channel.Reader.TryRead(out var message))
         {
             Current = message;
