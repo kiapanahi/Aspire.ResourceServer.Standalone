@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace Aspire.ResourceService.Standalone.Server.Diagnostics;

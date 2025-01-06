@@ -86,7 +86,7 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
         {
             try
             {
-                await foreach (var log in _resourceProvider.GerResourceLogs(request.ResourceName, cts.Token))
+                await foreach (var log in _resourceProvider.GerResourceLogs(request.ResourceName, cts.Token).ConfigureAwait(false))
                 {
                     update.LogLines.Add(new ConsoleLogLine { Text = log, IsStdErr = false, LineNumber = ++lineNumber });
                     await responseStream.WriteAsync(update, cts.Token).ConfigureAwait(false);
@@ -130,7 +130,6 @@ internal static partial class WatchResourcesLogs
 
     [LoggerMessage(Events.InitialResourcesSent, LogLevel.Trace, "Initial resources sent")]
     public static partial void InitialResourcesWroteToStreamSuccessfully(this ILogger logger);
-
 
     [LoggerMessage(Events.ErrorWatchingResources, LogLevel.Error, "Error executing service method {Method}")]
     public static partial void LogErrorWatchingResources(this ILogger logger, string method, Exception ex);

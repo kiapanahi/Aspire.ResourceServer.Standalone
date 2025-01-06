@@ -1,4 +1,4 @@
-﻿using Aspire.ResourceService.Standalone.Server.ResourceProviders;
+using Aspire.ResourceService.Standalone.Server.ResourceProviders;
 
 using Docker.DotNet;
 using Docker.DotNet.Models;
@@ -40,7 +40,7 @@ public class DockerResourceProviderTests : IDisposable
             .ReturnsAsync(containers);
 
         // Act
-        var resources = await _dockerResourceProvider.GetResourcesAsync();
+        var resources = await _dockerResourceProvider.GetResourcesAsync().ConfigureAwait(false);
 
         // Assert
         resources.Should().HaveCount(1);
@@ -73,13 +73,12 @@ public class DockerResourceProviderTests : IDisposable
         // Act
         for (var i = 0; i < 10; i++)
         {
-            _ = await _dockerResourceProvider.GetResourcesAsync();
+            _ = await _dockerResourceProvider.GetResourcesAsync().ConfigureAwait(false);
         }
 
         // Assert
         _dockerClientMock.Verify(c => c.Containers.ListContainersAsync(It.IsAny<ContainersListParameters>(), It.IsAny<CancellationToken>()), Times.Once);
     }
-
 
     [Fact]
     public async Task GerResourceLogsShouldReturnLogs()
@@ -130,7 +129,6 @@ public class DockerResourceProviderTests : IDisposable
             // cts.Task is cancelled mimicking the end of the log stream.
             // Swallow
         }
-
 
         // Assert
         resultLogs.Should().BeEquivalentTo(logs);

@@ -1,4 +1,4 @@
-﻿using Aspire.ResourceService.Standalone.Server.Diagnostics;
+using Aspire.ResourceService.Standalone.Server.Diagnostics;
 
 using FluentAssertions;
 
@@ -12,7 +12,6 @@ public sealed class ServiceInformationTests
     public void VersionGuard()
     {
         IServiceInformationProvider sut = new AssemblyServiceInformationProvider();
-
 
         sut.GetServiceInformation().Version.Should().Be("0.3.0");
         sut.GetServiceInformation().Name.Should().Be("Aspire.ResourceService.Standalone.Server");
@@ -61,7 +60,6 @@ public sealed class ServiceInformationTests
         si.Name.Should().Be("mock-name");
         si.Version.Should().Be("mock-version");
     }
-
 
     private sealed class MockServiceInformationProvider : IServiceInformationProvider
     {

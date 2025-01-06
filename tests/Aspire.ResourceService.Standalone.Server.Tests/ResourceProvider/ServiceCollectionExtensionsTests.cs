@@ -1,11 +1,10 @@
-﻿using Aspire.ResourceService.Standalone.Server.ResourceProviders;
+using Aspire.ResourceService.Standalone.Server.ResourceProviders;
 
 using Docker.DotNet;
 
 using FluentAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
-
 
 namespace Aspire.ResourceService.Standalone.Server.Tests.ResourceProvider;
 

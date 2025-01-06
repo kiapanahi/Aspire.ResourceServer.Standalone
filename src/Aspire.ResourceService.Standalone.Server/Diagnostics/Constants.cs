@@ -1,4 +1,4 @@
-﻿namespace Aspire.ResourceService.Standalone.Server.Diagnostics;
+namespace Aspire.ResourceService.Standalone.Server.Diagnostics;
 
 internal static class Constants
 {

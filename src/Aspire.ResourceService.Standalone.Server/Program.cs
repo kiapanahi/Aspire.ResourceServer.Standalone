@@ -13,9 +13,7 @@ builder.Services.AddResourceProvider();
 builder.Services.AddGrpc();
 builder.Services.AddGrpcReflection();
 
-
 var app = builder.Build();
-
 
 if (app.Environment.IsDevelopment())
 {
