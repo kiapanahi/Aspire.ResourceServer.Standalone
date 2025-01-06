@@ -66,7 +66,6 @@ internal sealed partial class DockerResourceProvider : IResourceProvider
             notificationChannel.Writer.TryWrite(log);
         }
 
-
         IProgress<string> p = new Progress<string>(WriteToChannel);
 
         _ = _dockerClient.Containers
@@ -93,7 +92,7 @@ internal sealed partial class DockerResourceProvider : IResourceProvider
 
         try
         {
-            await _syncRoot.WaitAsync();
+            await _syncRoot.WaitAsync().ConfigureAwait(false);
             var c = await _dockerClient.Containers
                 .ListContainersAsync(new ContainersListParameters(), CancellationToken.None)
                 .ConfigureAwait(false);
