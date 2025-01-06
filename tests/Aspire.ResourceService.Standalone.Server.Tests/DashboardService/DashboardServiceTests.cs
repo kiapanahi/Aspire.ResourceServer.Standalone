@@ -46,7 +46,7 @@ public class DashboardServiceTests
         var context = TestServerCallContext.Create();
 
         // Act
-        var response = await _dashboardService.GetApplicationInformation(request, context);
+        var response = await _dashboardService.GetApplicationInformation(request, context).ConfigureAwait(false);
 
         // Assert
         response.ApplicationName.Should().Be(expectedName);
@@ -74,7 +74,7 @@ public class DashboardServiceTests
         responseStream.Complete();
 
         var allMessages = new List<WatchResourcesUpdate>();
-        await foreach (var message in responseStream.ReadAllAsync())
+        await foreach (var message in responseStream.ReadAllAsync().ConfigureAwait(false))
         {
             allMessages.Add(message);
         }
@@ -106,7 +106,7 @@ public class DashboardServiceTests
         responseStream.Complete();
 
         // Assert
-        var update = await responseStream.ReadNextAsync();
+        var update = await responseStream.ReadNextAsync().ConfigureAwait(false);
         update.Should().NotBeNull();
         update!.LogLines.Should().HaveCount(2);
         update.LogLines[0].Text.Should().Be(logs[0]);

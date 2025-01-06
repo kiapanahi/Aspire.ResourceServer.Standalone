@@ -40,7 +40,7 @@ public class DockerResourceProviderTests : IDisposable
             .ReturnsAsync(containers);
 
         // Act
-        var resources = await _dockerResourceProvider.GetResourcesAsync();
+        var resources = await _dockerResourceProvider.GetResourcesAsync().ConfigureAwait(false);
 
         // Assert
         resources.Should().HaveCount(1);
@@ -73,7 +73,7 @@ public class DockerResourceProviderTests : IDisposable
         // Act
         for (var i = 0; i < 10; i++)
         {
-            _ = await _dockerResourceProvider.GetResourcesAsync();
+            _ = await _dockerResourceProvider.GetResourcesAsync().ConfigureAwait(false);
         }
 
         // Assert
