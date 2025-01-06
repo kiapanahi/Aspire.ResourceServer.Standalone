@@ -18,18 +18,17 @@ public class DashboardServiceTests
 {
     private readonly Mock<IServiceInformationProvider> _mockServiceInformationProvider;
     private readonly Mock<IResourceProvider> _mockResourceProvider;
-    private readonly Mock<IHostApplicationLifetime> _mockHostApplicationLifetime;
     private readonly DashboardServiceImpl _dashboardService;
 
     public DashboardServiceTests()
     {
         _mockServiceInformationProvider = new Mock<IServiceInformationProvider>();
         _mockResourceProvider = new Mock<IResourceProvider>();
-        _mockHostApplicationLifetime = new Mock<IHostApplicationLifetime>();
+        Mock<IHostApplicationLifetime> mockHostApplicationLifetime = new();
         _dashboardService = new DashboardServiceImpl(
             _mockServiceInformationProvider.Object,
             _mockResourceProvider.Object,
-            _mockHostApplicationLifetime.Object,
+            mockHostApplicationLifetime.Object,
             NullLogger<DashboardServiceImpl>.Instance);
     }
 
@@ -46,7 +45,7 @@ public class DashboardServiceTests
         var context = TestServerCallContext.Create();
 
         // Act
-        var response = await _dashboardService.GetApplicationInformation(request, context).ConfigureAwait(false);
+        var response = await _dashboardService.GetApplicationInformation(request, context).ConfigureAwait(true);
 
         // Assert
         response.ApplicationName.Should().Be(expectedName);
@@ -70,11 +69,11 @@ public class DashboardServiceTests
 
         // Assert
         call.IsCompleted.Should().BeTrue();
-        await call.ConfigureAwait(false);
+        await call.ConfigureAwait(true);
         responseStream.Complete();
 
         var allMessages = new List<WatchResourcesUpdate>();
-        await foreach (var message in responseStream.ReadAllAsync().ConfigureAwait(false))
+        await foreach (var message in responseStream.ReadAllAsync().WithCancellation(cts.Token).ConfigureAwait(false))
         {
             allMessages.Add(message);
         }
@@ -101,12 +100,12 @@ public class DashboardServiceTests
         var call = _dashboardService.WatchResourceConsoleLogs(request, responseStream, callContext);
 
         call.IsCompleted.Should().BeTrue();
-        await call.ConfigureAwait(false);
+        await call.ConfigureAwait(true);
 
         responseStream.Complete();
 
         // Assert
-        var update = await responseStream.ReadNextAsync().ConfigureAwait(false);
+        var update = await responseStream.ReadNextAsync().ConfigureAwait(true);
         update.Should().NotBeNull();
         update!.LogLines.Should().HaveCount(2);
         update.LogLines[0].Text.Should().Be(logs[0]);

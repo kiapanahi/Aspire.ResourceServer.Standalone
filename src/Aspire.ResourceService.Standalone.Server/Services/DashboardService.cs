@@ -54,7 +54,7 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
 
             _logger.WritingInitialResourcesToStream();
             await responseStream
-                .WriteAsync(new WatchResourcesUpdate { InitialData = data }, cts.Token)
+                .WriteAsync(new WatchResourcesUpdate { InitialData = data }, CancellationToken.None)
                 .ConfigureAwait(false);
             _logger.InitialResourcesWroteToStreamSuccessfully();
 
@@ -89,7 +89,7 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
                 await foreach (var log in _resourceProvider.GerResourceLogs(request.ResourceName, cts.Token).ConfigureAwait(false))
                 {
                     update.LogLines.Add(new ConsoleLogLine { Text = log, IsStdErr = false, LineNumber = ++lineNumber });
-                    await responseStream.WriteAsync(update, cts.Token).ConfigureAwait(false);
+                    await responseStream.WriteAsync(update, CancellationToken.None).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException) when (cts.Token.IsCancellationRequested)
