@@ -33,7 +33,7 @@ public class TestServerStreamWriter<T> : IServerStreamWriter<T> where T : class
 
     public async Task<T?> ReadNextAsync()
     {
-        if (await _channel.Reader.WaitToReadAsync())
+        if (await _channel.Reader.WaitToReadAsync().ConfigureAwait(false))
         {
             _channel.Reader.TryRead(out var message);
             return message;
