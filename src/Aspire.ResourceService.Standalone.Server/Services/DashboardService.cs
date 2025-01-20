@@ -1,7 +1,7 @@
+using System.Runtime.CompilerServices;
 using Aspire.ResourceService.Proto.V1;
 using Aspire.ResourceService.Standalone.Server.Diagnostics;
 using Aspire.ResourceService.Standalone.Server.ResourceProviders;
-
 using Grpc.Core;
 
 namespace Aspire.ResourceService.Standalone.Server.Services;
@@ -44,12 +44,15 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
         try
         {
             _logger.GettingResourcesFromResourceProvider();
-            var resources = await _resourceProvider.GetResourcesAsync().ConfigureAwait(false);
-            _logger.GotResourcesFromResourceProvider(resources.Count);
+            var (initialData, updates) = await _resourceProvider
+                .GetResources(cts.Token)
+                .ConfigureAwait(false);
+
+            _logger.GotResourcesFromResourceProvider(initialData.Count);
 
             _logger.CompilingInitialResources();
             var data = new InitialResourceData();
-            data.Resources.Add(resources);
+            data.Resources.Add(initialData);
             _logger.InitialResourcesCompiled();
 
             _logger.WritingInitialResourcesToStream();
@@ -58,6 +61,19 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
                 .ConfigureAwait(false);
             _logger.InitialResourcesWroteToStreamSuccessfully();
 
+            await foreach (var resourceUpdate in updates.WithCancellation(cts.Token).ConfigureAwait(false))
+            {
+#pragma warning disable CA1848
+                _logger.LogInformation("Got resource update: {Update}", resourceUpdate);
+#pragma warning restore CA1848
+
+                var changes = new WatchResourcesChanges();
+
+                changes.Value.Add(resourceUpdate);
+
+                await responseStream.WriteAsync(new WatchResourcesUpdate { Changes = changes },
+                    CancellationToken.None).ConfigureAwait(false);
+            }
         }
         catch (OperationCanceledException) when (cts.Token.IsCancellationRequested)
         {
@@ -86,7 +102,8 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
         {
             try
             {
-                await foreach (var log in _resourceProvider.GerResourceLogs(request.ResourceName, cts.Token).ConfigureAwait(false))
+                await foreach (var log in _resourceProvider.GerResourceLogs(request.ResourceName, cts.Token)
+                                   .ConfigureAwait(false))
                 {
                     update.LogLines.Add(new ConsoleLogLine { Text = log, IsStdErr = false, LineNumber = ++lineNumber });
                     await responseStream.WriteAsync(update, CancellationToken.None).ConfigureAwait(false);
@@ -113,7 +130,8 @@ internal static partial class WatchResourcesLogs
     [LoggerMessage(LogLevel.Trace, "Returning application information")]
     public static partial void ReturningApplicationInformation(this ILogger logger);
 
-    [LoggerMessage(Events.PreparingToGetResources, LogLevel.Trace, "Preparing to get resources from the resource provider")]
+    [LoggerMessage(Events.PreparingToGetResources, LogLevel.Trace,
+        "Preparing to get resources from the resource provider")]
     public static partial void GettingResourcesFromResourceProvider(this ILogger logger);
 
     [LoggerMessage(Events.ResourcesReceived, LogLevel.Trace, "Received {Count} resources from resource provider")]

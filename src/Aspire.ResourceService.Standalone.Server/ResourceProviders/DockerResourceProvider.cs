@@ -1,41 +1,36 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Threading.Channels;
-
 using Aspire.Dashboard.Model;
 using Aspire.ResourceService.Proto.V1;
-
 using Docker.DotNet;
 using Docker.DotNet.Models;
-
 using Google.Protobuf.WellKnownTypes;
 
 namespace Aspire.ResourceService.Standalone.Server.ResourceProviders;
 
-internal sealed partial class DockerResourceProvider : IResourceProvider
+internal sealed partial class DockerResourceProvider(IDockerClient dockerClient, ILogger<DockerResourceProvider> logger)
+    : IResourceProvider
 {
-    private readonly IDockerClient _dockerClient;
     private readonly SemaphoreSlim _syncRoot = new(1);
     private readonly List<ContainerListResponse> _dockerContainers = [];
 
-    public DockerResourceProvider(IDockerClient dockerClient)
-    {
-        _dockerClient = dockerClient;
-    }
-
-    public async Task<List<Resource>> GetResourcesAsync()
+    public async Task<ResourceSubscription> GetResources(CancellationToken cancellationToken)
     {
         var containers = await GetContainers().ConfigureAwait(false);
 
         List<Resource> resources = [];
         foreach (var container in containers)
         {
+            var containerName = container.Names.First().Replace("/", "");
             var ar = new Resource
             {
                 CreatedAt = Timestamp.FromDateTime(container.Created),
                 State = container.State,
-                DisplayName = container.Names.First(),
+                DisplayName = containerName,
                 ResourceType = KnownResourceTypes.Container,
-                Name = string.Join('|', container.Names),
+                Name = containerName,
                 Uid = container.ID
             };
 
@@ -50,10 +45,62 @@ internal sealed partial class DockerResourceProvider : IResourceProvider
             resources.Add(ar);
         }
 
-        return resources;
+        return new ResourceSubscription(resources, UpdateStream(cancellationToken));
+
+        [SuppressMessage("Performance", "CA1848:Use the LoggerMessage delegates")]
+        async IAsyncEnumerable<WatchResourcesChange> UpdateStream(
+            [EnumeratorCancellation] CancellationToken cancellation)
+        {
+            logger.LogInformation("Starting to monitor Docker events");
+            var channel = Channel.CreateUnbounded<Message>();
+            var progress = new Progress<Message>(message => channel.Writer.TryWrite(message));
+
+            _ = dockerClient.System.MonitorEventsAsync(new ContainerEventsParameters(), progress, cancellation);
+            logger.LogInformation("Monitoring Docker events started");
+
+            logger.LogInformation("Waiting for Docker events");
+            await foreach (var msg in channel.Reader.ReadAllAsync(cancellation).ConfigureAwait(false))
+            {
+                logger.LogInformation("Captured change: {Message}", JsonSerializer.Serialize(msg));
+
+                if (!string.Equals(msg.Type, "container", StringComparison.Ordinal))
+                {
+                    logger.LogInformation("Change type not container, skipping");
+                    continue;
+                }
+
+                var createdAt = Timestamp.FromDateTime(DateTimeOffset.FromUnixTimeSeconds(msg.Time).UtcDateTime);
+                var displayName = msg.Actor.Attributes["name"];
+                var containerId = msg.Actor.ID;
+                yield return msg.Action switch
+                {
+                    "start" => new WatchResourcesChange
+                    {
+                        Upsert = new Resource
+                        {
+                            CreatedAt = createdAt,
+                            State = "running",
+                            DisplayName = displayName,
+                            ResourceType = KnownResourceTypes.Container,
+                            Name = displayName,
+                            Uid = containerId
+                        }
+                    },
+                    "stop" or "die" => new WatchResourcesChange
+                    {
+                        Delete = new ResourceDeletion
+                        {
+                            ResourceType = KnownResourceTypes.Container, ResourceName = displayName
+                        }
+                    },
+                    _ => new WatchResourcesChange()
+                };
+            }
+        }
     }
 
-    public async IAsyncEnumerable<string> GerResourceLogs(string resourceName, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async IAsyncEnumerable<string> GerResourceLogs(string resourceName,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var containers = await GetContainers().ConfigureAwait(false);
 
@@ -68,19 +115,15 @@ internal sealed partial class DockerResourceProvider : IResourceProvider
 
         IProgress<string> p = new Progress<string>(WriteToChannel);
 
-        _ = _dockerClient.Containers
-            .GetContainerLogsAsync(container.ID, new ContainerLogsParameters()
-            {
-                ShowStdout = true,
-                ShowStderr = true,
-                Follow = true
-            }, cancellationToken, p);
+        _ = dockerClient.Containers
+            .GetContainerLogsAsync(container.ID,
+                new ContainerLogsParameters() { ShowStdout = true, ShowStderr = true, Follow = true },
+                cancellationToken, p);
 
         await foreach (var logItem in notificationChannel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
         {
             yield return logItem;
         }
-
     }
 
     private async ValueTask<List<ContainerListResponse>> GetContainers()
@@ -93,7 +136,7 @@ internal sealed partial class DockerResourceProvider : IResourceProvider
         try
         {
             await _syncRoot.WaitAsync().ConfigureAwait(false);
-            var c = await _dockerClient.Containers
+            var c = await dockerClient.Containers
                 .ListContainersAsync(new ContainersListParameters(), CancellationToken.None)
                 .ConfigureAwait(false);
 
@@ -106,6 +149,5 @@ internal sealed partial class DockerResourceProvider : IResourceProvider
         {
             _syncRoot.Release();
         }
-
     }
 }
