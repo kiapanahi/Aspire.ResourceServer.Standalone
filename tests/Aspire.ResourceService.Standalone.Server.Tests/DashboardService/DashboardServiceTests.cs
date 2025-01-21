@@ -60,10 +60,9 @@ public class DashboardServiceTests
         var callContext = TestServerCallContext.Create(cancellationToken: cts.Token);
         var responseStream = new TestServerStreamWriter<WatchResourcesUpdate>(callContext);
 
-        var resources = new List<Resource> { new() };
         _mockResourceProvider
-            .Setup(x => x.GetResourcesAsync())
-            .ReturnsAsync(resources);
+            .Setup(x => x.GetResources(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MockResourceSubscription());
 
         // Act
         using var call = _dashboardService.WatchResources(new WatchResourcesRequest { IsReconnect = true }, responseStream, callContext);
@@ -80,6 +79,11 @@ public class DashboardServiceTests
         }
 
         allMessages.Should().ContainSingle();
+
+        static ResourceSubscription MockResourceSubscription()
+        {
+            return new ResourceSubscription([new()], Enumerable.Empty<WatchResourcesChange>().ToAsyncEnumerable());
+        }
     }
 
     [Fact]

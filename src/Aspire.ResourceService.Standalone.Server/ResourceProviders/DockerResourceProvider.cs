@@ -51,8 +51,15 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
             var channel = Channel.CreateUnbounded<Message>();
             var progress = new Progress<Message>(message => channel.Writer.TryWrite(message));
 
-            _ = dockerClient.System.MonitorEventsAsync(new ContainerEventsParameters(), progress, cancellation);
-            logger.MonitoringDockerEventsStarted();
+            try
+            {
+                _ = dockerClient.System.MonitorEventsAsync(new ContainerEventsParameters(), progress, cancellation);
+                logger.MonitoringDockerEventsStarted();
+            }
+            catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException)
+            {
+                // Task is cancelled, swallow the exception.
+            }
 
             logger.WaitingForDockerEvents();
             await foreach (var msg in channel.Reader.ReadAllAsync(cancellation).ConfigureAwait(false))

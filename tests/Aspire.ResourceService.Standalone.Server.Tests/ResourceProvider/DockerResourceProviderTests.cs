@@ -41,11 +41,11 @@ public class DockerResourceProviderTests : IDisposable
             .ReturnsAsync(containers);
 
         // Act
-        var resources = await _dockerResourceProvider.GetResourcesAsync().ConfigureAwait(true);
+        var (initialResources, updateStream) = await _dockerResourceProvider.GetResources(CancellationToken.None).ConfigureAwait(true);
 
         // Assert
-        resources.Should().HaveCount(1);
-        var resource = resources.First();
+        initialResources.Should().ContainSingle();
+        var resource = initialResources.First();
         resource.Uid.Should().Be("1");
         resource.Name.Should().Be("container1");
         resource.State.Should().Be("running");
@@ -76,7 +76,7 @@ public class DockerResourceProviderTests : IDisposable
         // Act
         for (var i = 0; i < 10; i++)
         {
-            _ = await _dockerResourceProvider.GetResourcesAsync().ConfigureAwait(true);
+            _ = await _dockerResourceProvider.GetResources(It.IsAny<CancellationToken>()).ConfigureAwait(true);
         }
 
         // Assert
