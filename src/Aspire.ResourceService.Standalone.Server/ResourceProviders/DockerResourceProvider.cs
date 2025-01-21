@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Channels;
@@ -47,25 +46,22 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
 
         return new ResourceSubscription(resources, UpdateStream(cancellationToken));
 
-        [SuppressMessage("Performance", "CA1848:Use the LoggerMessage delegates")]
-        async IAsyncEnumerable<WatchResourcesChange> UpdateStream(
-            [EnumeratorCancellation] CancellationToken cancellation)
+        async IAsyncEnumerable<WatchResourcesChange> UpdateStream([EnumeratorCancellation] CancellationToken cancellation)
         {
-            logger.LogInformation("Starting to monitor Docker events");
             var channel = Channel.CreateUnbounded<Message>();
             var progress = new Progress<Message>(message => channel.Writer.TryWrite(message));
 
             _ = dockerClient.System.MonitorEventsAsync(new ContainerEventsParameters(), progress, cancellation);
-            logger.LogInformation("Monitoring Docker events started");
+            logger.MonitoringDockerEventsStarted();
 
-            logger.LogInformation("Waiting for Docker events");
+            logger.WaitingForDockerEvents();
             await foreach (var msg in channel.Reader.ReadAllAsync(cancellation).ConfigureAwait(false))
             {
-                logger.LogInformation("Captured change: {Message}", JsonSerializer.Serialize(msg));
+                logger.CapturedDockerChange(JsonSerializer.Serialize(msg));
 
                 if (!string.Equals(msg.Type, "container", StringComparison.Ordinal))
                 {
-                    logger.LogInformation("Change type not container, skipping");
+                    logger.SkippingChange(msg.Type);
                     continue;
                 }
 
@@ -90,7 +86,8 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
                     {
                         Delete = new ResourceDeletion
                         {
-                            ResourceType = KnownResourceTypes.Container, ResourceName = displayName
+                            ResourceType = KnownResourceTypes.Container,
+                            ResourceName = displayName
                         }
                     },
                     _ => new WatchResourcesChange()
@@ -99,8 +96,7 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
         }
     }
 
-    public async IAsyncEnumerable<string> GerResourceLogs(string resourceName,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async IAsyncEnumerable<string> GerResourceLogs(string resourceName, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var containers = await GetContainers().ConfigureAwait(false);
 
@@ -150,4 +146,19 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
             _syncRoot.Release();
         }
     }
+}
+
+internal static partial class DockerResourceProviderLogs
+{
+    [LoggerMessage(LogLevel.Debug, "Monitoring Docker events started")]
+    public static partial void MonitoringDockerEventsStarted(this ILogger<DockerResourceProvider> logger);
+
+    [LoggerMessage(LogLevel.Debug, "Waiting for Docker events")]
+    public static partial void WaitingForDockerEvents(this ILogger<DockerResourceProvider> logger);
+
+    [LoggerMessage(LogLevel.Debug, "Captured change: {Change}")]
+    public static partial void CapturedDockerChange(this ILogger<DockerResourceProvider> logger, string change);
+
+    [LoggerMessage(LogLevel.Debug, "Skipping change of type: {Change}")]
+    public static partial void SkippingChange(this ILogger<DockerResourceProvider> logger, string change);
 }
