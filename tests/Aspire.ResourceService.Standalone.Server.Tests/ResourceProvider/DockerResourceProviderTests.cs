@@ -41,7 +41,8 @@ public class DockerResourceProviderTests : IDisposable
             .ReturnsAsync(containers);
 
         // Act
-        var (initialResources, updateStream) = await _dockerResourceProvider.GetResources(CancellationToken.None).ConfigureAwait(true);
+        var (initialResources, updateStream) =
+            await _dockerResourceProvider.GetResources(CancellationToken.None).ConfigureAwait(true);
 
         // Assert
         initialResources.Should().ContainSingle();
@@ -83,6 +84,38 @@ public class DockerResourceProviderTests : IDisposable
         _dockerClientMock.Verify(
             c => c.Containers.ListContainersAsync(It.IsAny<ContainersListParameters>(), It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task HitDockerEngineEverytimeIfRebuildCache()
+    {
+        // Arrange
+        var containers = new List<ContainerListResponse>
+        {
+            new()
+            {
+                ID = "1",
+                Names = ["container1"],
+                State = "running",
+                Created = DateTime.UtcNow,
+                Ports = [new() { IP = "127.0.0.1", PublicPort = 80 }]
+            }
+        };
+
+        _dockerClientMock.Setup(c =>
+                c.Containers.ListContainersAsync(It.IsAny<ContainersListParameters>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(containers);
+
+        // Act
+        for (var i = 0; i < 10; i++)
+        {
+            _ = await _dockerResourceProvider.GetContainers(rebuildCache: true).ConfigureAwait(true);
+        }
+
+        // Assert
+        _dockerClientMock.Verify(
+            c => c.Containers.ListContainersAsync(It.IsAny<ContainersListParameters>(), It.IsAny<CancellationToken>()),
+            Times.Exactly(10));
     }
 
     [Fact]

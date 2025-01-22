@@ -46,7 +46,8 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
 
         return new ResourceSubscription(resources, UpdateStream(cancellationToken));
 
-        async IAsyncEnumerable<WatchResourcesChange> UpdateStream([EnumeratorCancellation] CancellationToken cancellation)
+        async IAsyncEnumerable<WatchResourcesChange> UpdateStream(
+            [EnumeratorCancellation] CancellationToken cancellation)
         {
             var channel = Channel.CreateUnbounded<Message>();
             var progress = new Progress<Message>(message => channel.Writer.TryWrite(message));
@@ -77,24 +78,12 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
                 var containerId = msg.Actor.ID;
                 yield return msg.Action switch
                 {
-                    "start" => new WatchResourcesChange
-                    {
-                        Upsert = new Resource
-                        {
-                            CreatedAt = createdAt,
-                            State = "running",
-                            DisplayName = displayName,
-                            ResourceType = KnownResourceTypes.Container,
-                            Name = displayName,
-                            Uid = containerId
-                        }
-                    },
+                    "start" => await GetChangeForStartedContainer(msg.Actor.ID).ConfigureAwait(false),
                     "stop" or "die" => new WatchResourcesChange
                     {
                         Delete = new ResourceDeletion
                         {
-                            ResourceType = KnownResourceTypes.Container,
-                            ResourceName = displayName
+                            ResourceType = KnownResourceTypes.Container, ResourceName = displayName
                         }
                     },
                     _ => new WatchResourcesChange()
@@ -103,7 +92,32 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
         }
     }
 
-    public async IAsyncEnumerable<string> GerResourceLogs(string resourceName, [EnumeratorCancellation] CancellationToken cancellationToken)
+    private async Task<WatchResourcesChange> GetChangeForStartedContainer(string containerId)
+    {
+        var containers = await GetContainers(rebuildCache: true).ConfigureAwait(false);
+        var container = containers.Single(c => string.Equals(c.ID, containerId, StringComparison.OrdinalIgnoreCase));
+        var containerName = container.Names.First().Replace("/", "");
+        var ar = new Resource
+        {
+            CreatedAt = Timestamp.FromDateTime(container.Created),
+            State = container.State,
+            DisplayName = containerName,
+            ResourceType = KnownResourceTypes.Container,
+            Name = containerName,
+            Uid = container.ID
+        };
+        ar.Urls.Add(container.Ports.Where(p => !string.IsNullOrEmpty(p.IP))
+            .Select(s => new Url
+            {
+                IsInternal = false,
+                Name = $"http://{s.IP}:{s.PublicPort}",
+                FullUrl = $"http://{s.IP}:{s.PublicPort}"
+            }));
+        return new() { Upsert = ar };
+    }
+
+    public async IAsyncEnumerable<string> GerResourceLogs(string resourceName,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var containers = await GetContainers().ConfigureAwait(false);
 
@@ -129,9 +143,14 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
         }
     }
 
-    private async ValueTask<List<ContainerListResponse>> GetContainers()
+    public async ValueTask<List<ContainerListResponse>> GetContainers(bool rebuildCache = false)
     {
-        if (_dockerContainers.Count != 0)
+        if (rebuildCache)
+        {
+            _dockerContainers.Clear();
+        }
+
+        if (_dockerContainers.Count != 0 && !rebuildCache)
         {
             return _dockerContainers;
         }
