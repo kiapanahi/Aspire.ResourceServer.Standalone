@@ -11,16 +11,20 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 
 WORKDIR "/src"
-COPY . .
 
-RUN dotnet restore "/src/src/Aspire.ResourceService.Standalone.Server/Aspire.ResourceService.Standalone.Server.csproj"
+COPY Directory.Build.props ./
+COPY src/Aspire.ResourceService.Standalone.Server/Aspire.ResourceService.Standalone.Server.csproj ./Aspire.ResourceService.Standalone.Server/
+COPY src/Aspire.ResourceService.Standalone.ServiceDefaults/Aspire.ResourceService.Standalone.ServiceDefaults.csproj ./Aspire.ResourceService.Standalone.ServiceDefaults/
 
-RUN dotnet build   "/src/src/Aspire.ResourceService.Standalone.Server/Aspire.ResourceService.Standalone.Server.csproj" -f net9.0 -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet restore ./Aspire.ResourceService.Standalone.Server/Aspire.ResourceService.Standalone.Server.csproj
+
+COPY src .
+RUN dotnet build ./Aspire.ResourceService.Standalone.Server/Aspire.ResourceService.Standalone.Server.csproj -f net9.0 -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 
-RUN dotnet publish "/src/src/Aspire.ResourceService.Standalone.Server/Aspire.ResourceService.Standalone.Server.csproj" -f net9.0 -c $BUILD_CONFIGURATION -o /app/publish 
+RUN dotnet publish ./Aspire.ResourceService.Standalone.Server/Aspire.ResourceService.Standalone.Server.csproj -f net9.0 -c $BUILD_CONFIGURATION -o /app/publish 
 
 FROM base AS final
 WORKDIR /app

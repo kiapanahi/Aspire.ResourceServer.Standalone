@@ -13,9 +13,4 @@ docker pull mcr.microsoft.com/dotnet/aspnet:9.0
 docker buildx build --platform linux/arm64,linux/amd64 -f Dockerfile \
   -t aspire-resource-server:latest \
   -t aspire-resource-server:$current_date \
-  -t timdinh/aspire-resource-server:latest \
-  -t timdinh/aspire-resource-server:$current_date \
   ..
-
-docker push timdinh/aspire-resource-server:latest
-docker push timdinh/aspire-resource-server:$current_date
