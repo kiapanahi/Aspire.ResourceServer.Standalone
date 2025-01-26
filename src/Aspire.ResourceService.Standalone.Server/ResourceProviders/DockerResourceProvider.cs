@@ -19,30 +19,7 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
     {
         var containers = await GetContainers().ConfigureAwait(false);
 
-        List<Resource> resources = [];
-        foreach (var container in containers)
-        {
-            var containerName = container.Names.First().Replace("/", "");
-            var ar = new Resource
-            {
-                CreatedAt = Timestamp.FromDateTime(container.Created),
-                State = container.State,
-                DisplayName = containerName,
-                ResourceType = KnownResourceTypes.Container,
-                Name = containerName,
-                Uid = container.ID
-            };
-
-            ar.Urls.Add(container.Ports.Where(p => !string.IsNullOrEmpty(p.IP))
-                .Select(s => new Url
-                {
-                    IsInternal = false,
-                    Name = $"http://{s.IP}:{s.PublicPort}",
-                    FullUrl = $"http://{s.IP}:{s.PublicPort}"
-                }));
-
-            resources.Add(ar);
-        }
+        var resources = containers.Select(Resource.FromContainer).ToList().AsReadOnly();
 
         return new ResourceSubscription(resources, UpdateStream(cancellationToken));
 
