@@ -46,7 +46,7 @@ public class DockerResourceProviderTests : IDisposable
 
         // Assert
         initialResources.Should().ContainSingle();
-        var resource = initialResources.First();
+        var resource = initialResources[0];
         resource.Uid.Should().Be("1");
         resource.Name.Should().Be("container1");
         resource.State.Should().Be("running");
@@ -55,7 +55,7 @@ public class DockerResourceProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task GettingContainersHitsTheCacheAfterFirstTime()
+    public async Task GetContainersFromDocker()
     {
         // Arrange
         var containers = new List<ContainerListResponse>
@@ -77,39 +77,7 @@ public class DockerResourceProviderTests : IDisposable
         // Act
         for (var i = 0; i < 10; i++)
         {
-            _ = await _dockerResourceProvider.GetResources(It.IsAny<CancellationToken>()).ConfigureAwait(true);
-        }
-
-        // Assert
-        _dockerClientMock.Verify(
-            c => c.Containers.ListContainersAsync(It.IsAny<ContainersListParameters>(), It.IsAny<CancellationToken>()),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task HitDockerEngineEverytimeIfRebuildCache()
-    {
-        // Arrange
-        var containers = new List<ContainerListResponse>
-        {
-            new()
-            {
-                ID = "1",
-                Names = ["container1"],
-                State = "running",
-                Created = DateTime.UtcNow,
-                Ports = [new() { IP = "127.0.0.1", PublicPort = 80 }]
-            }
-        };
-
-        _dockerClientMock.Setup(c =>
-                c.Containers.ListContainersAsync(It.IsAny<ContainersListParameters>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(containers);
-
-        // Act
-        for (var i = 0; i < 10; i++)
-        {
-            _ = await _dockerResourceProvider.GetContainers(rebuildCache: true).ConfigureAwait(true);
+            _ = await _dockerResourceProvider.GetContainers().ConfigureAwait(true);
         }
 
         // Assert

@@ -12,9 +12,6 @@ namespace Aspire.ResourceService.Standalone.Server.ResourceProviders;
 internal sealed partial class DockerResourceProvider(IDockerClient dockerClient, ILogger<DockerResourceProvider> logger)
     : IResourceProvider
 {
-    private readonly SemaphoreSlim _syncRoot = new(1);
-    private readonly List<ContainerListResponse> _dockerContainers = [];
-
     public async Task<ResourceSubscription> GetResources(CancellationToken cancellationToken)
     {
         var containers = await GetContainers().ConfigureAwait(false);
@@ -60,7 +57,8 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
                     {
                         Delete = new ResourceDeletion
                         {
-                            ResourceType = KnownResourceTypes.Container, ResourceName = displayName
+                            ResourceType = KnownResourceTypes.Container,
+                            ResourceName = displayName
                         }
                     },
                     _ => new WatchResourcesChange()
@@ -71,7 +69,7 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
 
     private async Task<WatchResourcesChange> GetChangeForStartedContainer(string containerId)
     {
-        var containers = await GetContainers(rebuildCache: true).ConfigureAwait(false);
+        var containers = await GetContainers().ConfigureAwait(false);
         var container = containers.Single(c => string.Equals(c.ID, containerId, StringComparison.OrdinalIgnoreCase));
         var containerName = container.Names.First().Replace("/", "");
         var ar = new Resource
@@ -120,34 +118,12 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
         }
     }
 
-    public async ValueTask<List<ContainerListResponse>> GetContainers(bool rebuildCache = false)
+    public async Task<IList<ContainerListResponse>> GetContainers()
     {
-        if (rebuildCache)
-        {
-            _dockerContainers.Clear();
-        }
-
-        if (_dockerContainers.Count != 0 && !rebuildCache)
-        {
-            return _dockerContainers;
-        }
-
-        try
-        {
-            await _syncRoot.WaitAsync().ConfigureAwait(false);
-            var c = await dockerClient.Containers
-                .ListContainersAsync(new ContainersListParameters(), CancellationToken.None)
+        var c = await dockerClient.Containers
+                .ListContainersAsync(new ContainersListParameters() { All = true }, CancellationToken.None)
                 .ConfigureAwait(false);
-
-            _dockerContainers.AddRange(c);
-
-            return _dockerContainers;
-        }
-
-        finally
-        {
-            _syncRoot.Release();
-        }
+        return c;
     }
 }
 
