@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using Aspire.ResourceService.Proto.V1;
 using Aspire.ResourceService.Standalone.Server.Diagnostics;
 using Aspire.ResourceService.Standalone.Server.ResourceProviders;
