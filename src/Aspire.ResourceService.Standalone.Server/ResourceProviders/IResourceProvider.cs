@@ -10,4 +10,4 @@ public interface IResourceProvider
 
 public sealed record class ResourceSubscription(
     IReadOnlyList<Resource> InitialData,
-    IAsyncEnumerable<WatchResourcesChange> ChangeStream);
+    IAsyncEnumerable<WatchResourcesChange?> ChangeStream);
