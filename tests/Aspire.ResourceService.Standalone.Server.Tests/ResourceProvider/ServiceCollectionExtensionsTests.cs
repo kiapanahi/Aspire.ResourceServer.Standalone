@@ -33,6 +33,7 @@ public class ServiceCollectionExtensionsTests
 
         // Act
         services.AddResourceProvider();
+        services.AddLogging();
         var serviceProvider = services.BuildServiceProvider();
         var resourceProvider = serviceProvider.GetService<IResourceProvider>();
 

@@ -16,7 +16,7 @@ internal sealed partial class DockerResourceProvider : IDisposable
         {
             if (disposing)
             {
-                _dockerClient?.Dispose();
+                dockerClient?.Dispose();
             }
 
             _disposedValue = true;

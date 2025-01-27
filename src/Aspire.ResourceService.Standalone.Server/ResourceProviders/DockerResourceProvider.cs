@@ -1,59 +1,68 @@
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Threading.Channels;
-
 using Aspire.Dashboard.Model;
 using Aspire.ResourceService.Proto.V1;
-
 using Docker.DotNet;
 using Docker.DotNet.Models;
-
 using Google.Protobuf.WellKnownTypes;
 
 namespace Aspire.ResourceService.Standalone.Server.ResourceProviders;
 
-internal sealed partial class DockerResourceProvider : IResourceProvider
+internal sealed partial class DockerResourceProvider(IDockerClient dockerClient, ILogger<DockerResourceProvider> logger)
+    : IResourceProvider
 {
-    private readonly IDockerClient _dockerClient;
-    private readonly SemaphoreSlim _syncRoot = new(1);
-    private readonly List<ContainerListResponse> _dockerContainers = [];
-
-    public DockerResourceProvider(IDockerClient dockerClient)
-    {
-        _dockerClient = dockerClient;
-    }
-
-    public async Task<List<Resource>> GetResourcesAsync()
+    public async Task<ResourceSubscription> GetResources(CancellationToken cancellationToken)
     {
         var containers = await GetContainers().ConfigureAwait(false);
 
-        List<Resource> resources = [];
-        foreach (var container in containers)
+        var resources = containers.Select(Resource.FromContainer).ToList().AsReadOnly();
+
+        return new ResourceSubscription(resources, UpdateStream(cancellationToken));
+
+        async IAsyncEnumerable<WatchResourcesChange> UpdateStream(
+            [EnumeratorCancellation] CancellationToken cancellation)
         {
-            var ar = new Resource
+            var channel = Channel.CreateUnbounded<Message>();
+            var progress = new Progress<Message>(message => channel.Writer.TryWrite(message));
+
+            try
             {
-                CreatedAt = Timestamp.FromDateTime(container.Created),
-                State = container.State,
-                DisplayName = container.Names.First(),
-                ResourceType = KnownResourceTypes.Container,
-                Name = string.Join('|', container.Names),
-                Uid = container.ID
-            };
+                _ = dockerClient.System.MonitorEventsAsync(new ContainerEventsParameters(), progress, cancellation);
+                logger.MonitoringDockerEventsStarted();
+            }
+            catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException)
+            {
+                // Task is cancelled, swallow the exception.
+            }
 
-            ar.Urls.Add(container.Ports.Where(p => !string.IsNullOrEmpty(p.IP))
-                .Select(s => new Url
+            logger.WaitingForDockerEvents();
+            await foreach (var msg in channel.Reader.ReadAllAsync(cancellation).ConfigureAwait(false))
+            {
+                logger.CapturedDockerChange(JsonSerializer.Serialize(msg));
+
+                if (!string.Equals(msg.Type, KnownResourceTypes.Container, StringComparison.OrdinalIgnoreCase))
                 {
-                    IsInternal = false,
-                    Name = $"http://{s.IP}:{s.PublicPort}",
-                    FullUrl = $"http://{s.IP}:{s.PublicPort}"
-                }));
+                    logger.SkippingChange(msg.Type);
+                    continue;
+                }
 
-            resources.Add(ar);
+                yield return await GetChangeForStartedContainer(msg.Actor.ID).ConfigureAwait(false);
+            }
         }
-
-        return resources;
     }
 
-    public async IAsyncEnumerable<string> GerResourceLogs(string resourceName, [EnumeratorCancellation] CancellationToken cancellationToken)
+    private async Task<WatchResourcesChange> GetChangeForStartedContainer(string containerId)
+    {
+        var containers = await GetContainers().ConfigureAwait(false);
+        var container = containers.Single(c => string.Equals(c.ID, containerId, StringComparison.OrdinalIgnoreCase));
+        var resource = Resource.FromContainer(container);
+
+        return new() { Upsert = resource };
+    }
+
+    public async IAsyncEnumerable<string> GerResourceLogs(string resourceName,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var containers = await GetContainers().ConfigureAwait(false);
 
@@ -68,44 +77,37 @@ internal sealed partial class DockerResourceProvider : IResourceProvider
 
         IProgress<string> p = new Progress<string>(WriteToChannel);
 
-        _ = _dockerClient.Containers
-            .GetContainerLogsAsync(container.ID, new ContainerLogsParameters()
-            {
-                ShowStdout = true,
-                ShowStderr = true,
-                Follow = true
-            }, cancellationToken, p);
+        _ = dockerClient.Containers
+            .GetContainerLogsAsync(container.ID,
+                new ContainerLogsParameters() { ShowStdout = true, ShowStderr = true, Follow = true },
+                cancellationToken, p);
 
         await foreach (var logItem in notificationChannel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
         {
             yield return logItem;
         }
-
     }
 
-    private async ValueTask<List<ContainerListResponse>> GetContainers()
+    public async Task<IList<ContainerListResponse>> GetContainers()
     {
-        if (_dockerContainers.Count != 0)
-        {
-            return _dockerContainers;
-        }
-
-        try
-        {
-            await _syncRoot.WaitAsync().ConfigureAwait(false);
-            var c = await _dockerClient.Containers
-                .ListContainersAsync(new ContainersListParameters(), CancellationToken.None)
-                .ConfigureAwait(false);
-
-            _dockerContainers.AddRange(c);
-
-            return _dockerContainers;
-        }
-
-        finally
-        {
-            _syncRoot.Release();
-        }
-
+        var c = await dockerClient.Containers
+            .ListContainersAsync(new ContainersListParameters() { All = true }, CancellationToken.None)
+            .ConfigureAwait(false);
+        return c;
     }
+}
+
+internal static partial class DockerResourceProviderLogs
+{
+    [LoggerMessage(LogLevel.Debug, "Monitoring Docker events started")]
+    public static partial void MonitoringDockerEventsStarted(this ILogger<DockerResourceProvider> logger);
+
+    [LoggerMessage(LogLevel.Debug, "Waiting for Docker events")]
+    public static partial void WaitingForDockerEvents(this ILogger<DockerResourceProvider> logger);
+
+    [LoggerMessage(LogLevel.Debug, "Captured change: {Change}")]
+    public static partial void CapturedDockerChange(this ILogger<DockerResourceProvider> logger, string change);
+
+    [LoggerMessage(LogLevel.Debug, "Skipping change of type: {Change}")]
+    public static partial void SkippingChange(this ILogger<DockerResourceProvider> logger, string change);
 }

@@ -18,17 +18,18 @@ public class DashboardServiceTests
 {
     private readonly Mock<IServiceInformationProvider> _mockServiceInformationProvider;
     private readonly Mock<IResourceProvider> _mockResourceProvider;
+    private readonly Mock<IHostApplicationLifetime> _mockHostApplicationLifetime;
     private readonly DashboardServiceImpl _dashboardService;
 
     public DashboardServiceTests()
     {
         _mockServiceInformationProvider = new Mock<IServiceInformationProvider>();
         _mockResourceProvider = new Mock<IResourceProvider>();
-        Mock<IHostApplicationLifetime> mockHostApplicationLifetime = new();
+        _mockHostApplicationLifetime = new Mock<IHostApplicationLifetime>();
         _dashboardService = new DashboardServiceImpl(
             _mockServiceInformationProvider.Object,
             _mockResourceProvider.Object,
-            mockHostApplicationLifetime.Object,
+            _mockHostApplicationLifetime.Object,
             NullLogger<DashboardServiceImpl>.Instance);
     }
 
@@ -59,10 +60,9 @@ public class DashboardServiceTests
         var callContext = TestServerCallContext.Create(cancellationToken: cts.Token);
         var responseStream = new TestServerStreamWriter<WatchResourcesUpdate>(callContext);
 
-        var resources = new List<Resource> { new() };
         _mockResourceProvider
-            .Setup(x => x.GetResourcesAsync())
-            .ReturnsAsync(resources);
+            .Setup(x => x.GetResources(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MockResourceSubscription());
 
         // Act
         using var call = _dashboardService.WatchResources(new WatchResourcesRequest { IsReconnect = true }, responseStream, callContext);
@@ -73,12 +73,17 @@ public class DashboardServiceTests
         responseStream.Complete();
 
         var allMessages = new List<WatchResourcesUpdate>();
-        await foreach (var message in responseStream.ReadAllAsync().WithCancellation(cts.Token).ConfigureAwait(false))
+        await foreach (var message in responseStream.ReadAllAsync().ConfigureAwait(false))
         {
             allMessages.Add(message);
         }
 
         allMessages.Should().ContainSingle();
+
+        static ResourceSubscription MockResourceSubscription()
+        {
+            return new ResourceSubscription([new()], Enumerable.Empty<WatchResourcesChange>().ToAsyncEnumerable());
+        }
     }
 
     [Fact]
@@ -122,6 +127,6 @@ internal static class Extensions
         {
             yield return item;
         }
-        await Task.CompletedTask.ConfigureAwait(false);
+        await Task.CompletedTask.ConfigureAwait(true);
     }
 }
