@@ -5,7 +5,6 @@ using Aspire.Dashboard.Model;
 using Aspire.ResourceService.Proto.V1;
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using Google.Protobuf.WellKnownTypes;
 
 namespace Aspire.ResourceService.Standalone.Server.ResourceProviders;
 
