@@ -41,28 +41,13 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
             {
                 logger.CapturedDockerChange(JsonSerializer.Serialize(msg));
 
-                if (!string.Equals(msg.Type, "container", StringComparison.Ordinal))
+                if (!string.Equals(msg.Type, KnownResourceTypes.Container, StringComparison.OrdinalIgnoreCase))
                 {
                     logger.SkippingChange(msg.Type);
                     continue;
                 }
 
-                var createdAt = Timestamp.FromDateTime(DateTimeOffset.FromUnixTimeSeconds(msg.Time).UtcDateTime);
-                var displayName = msg.Actor.Attributes["name"];
-                var containerId = msg.Actor.ID;
-                yield return msg.Action switch
-                {
-                    "start" => await GetChangeForStartedContainer(msg.Actor.ID).ConfigureAwait(false),
-                    "stop" or "die" => new WatchResourcesChange
-                    {
-                        Delete = new ResourceDeletion
-                        {
-                            ResourceType = KnownResourceTypes.Container,
-                            ResourceName = displayName
-                        }
-                    },
-                    _ => new WatchResourcesChange()
-                };
+                yield return await GetChangeForStartedContainer(msg.Actor.ID).ConfigureAwait(false);
             }
         }
     }
@@ -71,24 +56,9 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
     {
         var containers = await GetContainers().ConfigureAwait(false);
         var container = containers.Single(c => string.Equals(c.ID, containerId, StringComparison.OrdinalIgnoreCase));
-        var containerName = container.Names.First().Replace("/", "");
-        var ar = new Resource
-        {
-            CreatedAt = Timestamp.FromDateTime(container.Created),
-            State = container.State,
-            DisplayName = containerName,
-            ResourceType = KnownResourceTypes.Container,
-            Name = containerName,
-            Uid = container.ID
-        };
-        ar.Urls.Add(container.Ports.Where(p => !string.IsNullOrEmpty(p.IP))
-            .Select(s => new Url
-            {
-                IsInternal = false,
-                Name = $"http://{s.IP}:{s.PublicPort}",
-                FullUrl = $"http://{s.IP}:{s.PublicPort}"
-            }));
-        return new() { Upsert = ar };
+        var resource = Resource.FromContainer(container);
+
+        return new() { Upsert = resource };
     }
 
     public async IAsyncEnumerable<string> GerResourceLogs(string resourceName,
@@ -121,8 +91,8 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
     public async Task<IList<ContainerListResponse>> GetContainers()
     {
         var c = await dockerClient.Containers
-                .ListContainersAsync(new ContainersListParameters() { All = true }, CancellationToken.None)
-                .ConfigureAwait(false);
+            .ListContainersAsync(new ContainersListParameters() { All = true }, CancellationToken.None)
+            .ConfigureAwait(false);
         return c;
     }
 }

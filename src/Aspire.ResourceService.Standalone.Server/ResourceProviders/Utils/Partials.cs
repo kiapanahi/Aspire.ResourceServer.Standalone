@@ -2,6 +2,8 @@ using Aspire.Dashboard.Model;
 using Docker.DotNet.Models;
 using Google.Protobuf.WellKnownTypes;
 
+// ReSharper disable CheckNamespace
+
 namespace Aspire.ResourceService.Proto.V1;
 
 public sealed partial class Resource
