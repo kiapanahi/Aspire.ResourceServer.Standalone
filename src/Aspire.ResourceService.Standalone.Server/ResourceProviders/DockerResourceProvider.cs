@@ -5,7 +5,6 @@ using Aspire.Dashboard.Model;
 using Aspire.ResourceService.Proto.V1;
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using Google.Protobuf.WellKnownTypes;
 
 namespace Aspire.ResourceService.Standalone.Server.ResourceProviders;
 
@@ -20,7 +19,7 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
 
         return new ResourceSubscription(resources, UpdateStream(cancellationToken));
 
-        async IAsyncEnumerable<WatchResourcesChange> UpdateStream(
+        async IAsyncEnumerable<WatchResourcesChange?> UpdateStream(
             [EnumeratorCancellation] CancellationToken cancellation)
         {
             var channel = Channel.CreateUnbounded<Message>();
@@ -52,13 +51,21 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
         }
     }
 
-    private async Task<WatchResourcesChange> GetChangeForStartedContainer(string containerId)
+    private async Task<WatchResourcesChange?> GetChangeForStartedContainer(string containerId)
     {
-        var containers = await GetContainers().ConfigureAwait(false);
-        var container = containers.Single(c => string.Equals(c.ID, containerId, StringComparison.OrdinalIgnoreCase));
-        var resource = Resource.FromContainer(container);
+        try
+        {
+            var containers = await GetContainers().ConfigureAwait(false);
+            var container =
+                containers.Single(c => string.Equals(c.ID, containerId, StringComparison.OrdinalIgnoreCase));
+            var resource = Resource.FromContainer(container);
 
-        return new() { Upsert = resource };
+            return new() { Upsert = resource };
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     public async IAsyncEnumerable<string> GerResourceLogs(string resourceName,

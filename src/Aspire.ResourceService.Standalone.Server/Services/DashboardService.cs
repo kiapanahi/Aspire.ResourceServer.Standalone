@@ -49,10 +49,10 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
 
             _logger.GotResourcesFromResourceProvider(initialData.Count);
 
-            _logger.CompilingInitialResources();
+            _logger.LogCompilingInitialResources();
             var data = new InitialResourceData();
             data.Resources.Add(initialData);
-            _logger.InitialResourcesCompiled();
+            _logger.LogInitialResourcesCompiled();
 
             _logger.WritingInitialResourcesToStream();
             await responseStream
@@ -62,16 +62,20 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
 
             await foreach (var resourceUpdate in updates.WithCancellation(cts.Token).ConfigureAwait(false))
             {
-#pragma warning disable CA1848
-                _logger.LogInformation("Got resource update: {Update}", resourceUpdate);
-#pragma warning restore CA1848
+                // Skip empty updates.
+                if (resourceUpdate is null)
+                {
+                    continue;
+                }
 
-                var changes = new WatchResourcesChanges();
+                _logger.LogGotResourceUpdate(resourceUpdate);
 
-                changes.Value.Add(resourceUpdate);
+                EnsureResourceUpdateNotEmpty(resourceUpdate);
 
-                await responseStream.WriteAsync(new WatchResourcesUpdate { Changes = changes },
-                    CancellationToken.None).ConfigureAwait(false);
+                var changes = new WatchResourcesChanges { Value = { resourceUpdate } };
+
+                await responseStream.WriteAsync(new WatchResourcesUpdate { Changes = changes }, CancellationToken.None)
+                    .ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException) when (cts.Token.IsCancellationRequested)
@@ -86,6 +90,14 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
         {
             _logger.LogErrorWatchingResources(context.Method, ex);
             throw;
+        }
+
+        static void EnsureResourceUpdateNotEmpty(WatchResourcesChange resourceUpdate)
+        {
+            if (resourceUpdate.Delete is null && resourceUpdate.Upsert is null)
+            {
+                throw new InvalidOperationException("Resource update is empty.");
+            }
         }
     }
 
@@ -116,10 +128,6 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
             {
                 // Ignore cancellation and just return. Cancelled writes throw IOException.
             }
-            catch (Exception)
-            {
-                throw;
-            }
         }
     }
 }
@@ -137,10 +145,10 @@ internal static partial class WatchResourcesLogs
     public static partial void GotResourcesFromResourceProvider(this ILogger logger, int count);
 
     [LoggerMessage(Events.CompilingInitialResources, LogLevel.Trace, "Preparing to compile initial resources")]
-    public static partial void CompilingInitialResources(this ILogger logger);
+    public static partial void LogCompilingInitialResources(this ILogger logger);
 
     [LoggerMessage(Events.InitialResourcesCompiled, LogLevel.Trace, "Initial resources compiled")]
-    public static partial void InitialResourcesCompiled(this ILogger logger);
+    public static partial void LogInitialResourcesCompiled(this ILogger logger);
 
     [LoggerMessage(Events.SendingInitialResources, LogLevel.Trace, "Preparing to send initial resources")]
     public static partial void WritingInitialResourcesToStream(this ILogger logger);
@@ -151,6 +159,9 @@ internal static partial class WatchResourcesLogs
     [LoggerMessage(Events.ErrorWatchingResources, LogLevel.Error, "Error executing service method {Method}")]
     public static partial void LogErrorWatchingResources(this ILogger logger, string method, Exception ex);
 
+    [LoggerMessage(Events.ResourceUpdateReceived, LogLevel.Debug, "Got resource update: {Update}")]
+    public static partial void LogGotResourceUpdate(this ILogger logger, WatchResourcesChange update);
+
     private struct Events
     {
         internal const int PreparingToGetResources = 101;
@@ -159,6 +170,7 @@ internal static partial class WatchResourcesLogs
         internal const int InitialResourcesCompiled = 104;
         internal const int SendingInitialResources = 105;
         internal const int InitialResourcesSent = 106;
+        internal const int ResourceUpdateReceived = 107;
         internal const int ErrorWatchingResources = 501;
     }
 }
