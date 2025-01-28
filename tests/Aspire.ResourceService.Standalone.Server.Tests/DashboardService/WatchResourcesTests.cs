@@ -14,14 +14,14 @@ using DashboardServiceImpl = Aspire.ResourceService.Standalone.Server.Services.D
 
 namespace Aspire.ResourceService.Standalone.Server.Tests.DashboardService;
 
-public class DashboardServiceTests
+public class WatchResourcesTests
 {
     private readonly Mock<IServiceInformationProvider> _mockServiceInformationProvider;
     private readonly Mock<IResourceProvider> _mockResourceProvider;
     private readonly Mock<IHostApplicationLifetime> _mockHostApplicationLifetime;
     private readonly DashboardServiceImpl _dashboardService;
 
-    public DashboardServiceTests()
+    public WatchResourcesTests()
     {
         _mockServiceInformationProvider = new Mock<IServiceInformationProvider>();
         _mockResourceProvider = new Mock<IResourceProvider>();
@@ -34,26 +34,7 @@ public class DashboardServiceTests
     }
 
     [Fact]
-    public async Task GetApplicationInformationTest()
-    {
-        // Arrange
-        var expectedName = Constants.ServiceName;
-        _mockServiceInformationProvider
-            .Setup(x => x.GetServiceInformation())
-            .Returns(new ServiceInformation { Name = expectedName });
-
-        var request = new ApplicationInformationRequest();
-        var context = TestServerCallContext.Create();
-
-        // Act
-        var response = await _dashboardService.GetApplicationInformation(request, context).ConfigureAwait(true);
-
-        // Assert
-        response.ApplicationName.Should().Be(expectedName);
-    }
-
-    [Fact]
-    public async Task WatchResourcesStreamsData()
+    public async Task InitialSourceDataWithEmptyUpdateStream()
     {
         // Arrange
         var cts = new CancellationTokenSource();
@@ -87,34 +68,69 @@ public class DashboardServiceTests
     }
 
     [Fact]
-    public async Task WatchResourcesLogs()
+    public async Task WatchResourcesSkipsNullResourceUpdates()
     {
         // Arrange
-        var logs = new List<ResourceLogEntry> { new("resource", "log-1"), new("resource", "log-2") };
-        _mockResourceProvider
-            .Setup(x => x.GerResourceLogs(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Returns(logs.ToAsyncEnumerable());
-
-        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        var cts = new CancellationTokenSource();
         var callContext = TestServerCallContext.Create(cancellationToken: cts.Token);
-        var responseStream = new TestServerStreamWriter<WatchResourceConsoleLogsUpdate>(callContext);
+        var responseStream = new TestServerStreamWriter<WatchResourcesUpdate>(callContext);
 
-        var request = new WatchResourceConsoleLogsRequest { ResourceName = "resource" };
+        var initialData = new List<Resource>();
+        var updates = new List<WatchResourcesChange?>
+        {
+            null, // This should be skipped
+            null
+        }.ToAsyncEnumerable();
+
+        _mockResourceProvider
+            .Setup(x => x.GetResources(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ResourceSubscription(initialData, updates));
 
         // Act
-        var call = _dashboardService.WatchResourceConsoleLogs(request, responseStream, callContext);
-
-        call.IsCompleted.Should().BeTrue();
-        await call.ConfigureAwait(true);
-
-        responseStream.Complete();
+        using var call = _dashboardService.WatchResources(new WatchResourcesRequest(), responseStream, callContext);
 
         // Assert
-        var update = await responseStream.ReadNextAsync().ConfigureAwait(true);
-        update.Should().NotBeNull();
-        update!.LogLines.Should().HaveCount(2);
-        update.LogLines[0].Text.Should().Be(logs[0].Line);
-        update.LogLines[1].Text.Should().Be(logs[1].Line);
+        call.IsCompleted.Should().BeTrue();
+        await call.ConfigureAwait(true);
+        responseStream.Complete();
+
+        var allMessages = new List<WatchResourcesUpdate>();
+        await foreach (var message in responseStream.ReadAllAsync().ConfigureAwait(false))
+        {
+            allMessages.Add(message);
+        }
+
+        allMessages.Should().ContainSingle("only the initial resources should be returned");
+        allMessages[0].InitialData.Should().NotBeNull();
+        allMessages[0].Changes.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task WatchResourcesThrowsIfResourceUpdateIsEmpty()
+    {
+        // Arrange
+        var cts = new CancellationTokenSource();
+        var callContext = TestServerCallContext.Create(cancellationToken: cts.Token);
+        var responseStream = new TestServerStreamWriter<WatchResourcesUpdate>(callContext);
+
+        var initialData = new List<Resource>();
+        var emptyUpdate = new WatchResourcesChange(); // Neither Upsert nor Delete
+
+        var updates = new List<WatchResourcesChange?> { emptyUpdate }.ToAsyncEnumerable();
+
+        _mockResourceProvider
+            .Setup(x => x.GetResources(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ResourceSubscription(initialData, updates));
+
+        // Act
+        Func<Task> act = async () =>
+        {
+            using var call = _dashboardService.WatchResources(new WatchResourcesRequest(), responseStream, callContext);
+            await call.ConfigureAwait(false);
+        };
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>("Empty resource updates are not allowed");
     }
 
 }
