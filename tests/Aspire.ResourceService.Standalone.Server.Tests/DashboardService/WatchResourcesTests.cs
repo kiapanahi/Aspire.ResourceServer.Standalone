@@ -59,11 +59,59 @@ public class WatchResourcesTests
             allMessages.Add(message);
         }
 
+        // Should stream only one `WatchResourcesUpdate` to the client.
+        // that MUST contain the initial data and MUST NOT contain any changes.
         allMessages.Should().ContainSingle();
+        allMessages[0].InitialData.Should().NotBeNull();
+        allMessages[0].Changes.Should().BeNull();
 
         static ResourceSubscription MockResourceSubscription()
         {
             return new ResourceSubscription([new()], Enumerable.Empty<WatchResourcesChange>().ToAsyncEnumerable());
+        }
+    }
+
+    [Fact]
+    public async Task InitialSourceDataWithNonEmptyUpdateStream()
+    {
+        // Arrange
+        var cts = new CancellationTokenSource();
+        var callContext = TestServerCallContext.Create(cancellationToken: cts.Token);
+        var responseStream = new TestServerStreamWriter<WatchResourcesUpdate>(callContext);
+
+        _mockResourceProvider
+            .Setup(x => x.GetResources(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(MockResourceSubscription());
+
+        // Act
+        using var call = _dashboardService.WatchResources(new WatchResourcesRequest { IsReconnect = true }, responseStream, callContext);
+
+        // Assert
+        call.IsCompleted.Should().BeTrue();
+        await call.ConfigureAwait(true);
+        responseStream.Complete();
+
+        var allMessages = new List<WatchResourcesUpdate>();
+        await foreach (var message in responseStream.ReadAllAsync().ConfigureAwait(false))
+        {
+            allMessages.Add(message);
+        }
+
+        allMessages.Should().HaveCount(6);
+        allMessages[0].InitialData.Should().NotBeNull();
+        allMessages[0].Changes.Should().BeNull();
+
+        var updates = allMessages[1..];
+        updates.Should().OnlyContain(u => u.Changes != null);
+        updates.Should().OnlyContain(u => u.InitialData == null);
+
+        static ResourceSubscription MockResourceSubscription()
+        {
+            var changes = Enumerable.Range(1, 5).Select(i => new WatchResourcesChange
+            {
+                Upsert = new Resource { Name = $"Resource-{i}" }
+            });
+            return new ResourceSubscription([new()], changes.ToAsyncEnumerable());
         }
     }
 
