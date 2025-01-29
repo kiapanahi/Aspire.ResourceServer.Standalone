@@ -2,34 +2,28 @@ using Aspire.ResourceService.Proto.V1;
 using Aspire.ResourceService.Standalone.Server.Diagnostics;
 using Aspire.ResourceService.Standalone.Server.ResourceProviders;
 using Aspire.ResourceService.Standalone.Server.Tests.Helpers;
-
 using FluentAssertions;
-
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
-
 using Moq;
-
 using DashboardServiceImpl = Aspire.ResourceService.Standalone.Server.Services.DashboardService;
 
 namespace Aspire.ResourceService.Standalone.Server.Tests.DashboardService;
 
 public class WatchResourcesTests
 {
-    private readonly Mock<IServiceInformationProvider> _mockServiceInformationProvider;
     private readonly Mock<IResourceProvider> _mockResourceProvider;
-    private readonly Mock<IHostApplicationLifetime> _mockHostApplicationLifetime;
     private readonly DashboardServiceImpl _dashboardService;
 
     public WatchResourcesTests()
     {
-        _mockServiceInformationProvider = new Mock<IServiceInformationProvider>();
+        var mockServiceInformationProvider = new Mock<IServiceInformationProvider>();
         _mockResourceProvider = new Mock<IResourceProvider>();
-        _mockHostApplicationLifetime = new Mock<IHostApplicationLifetime>();
+        var mockHostApplicationLifetime = new Mock<IHostApplicationLifetime>();
         _dashboardService = new DashboardServiceImpl(
-            _mockServiceInformationProvider.Object,
+            mockServiceInformationProvider.Object,
             _mockResourceProvider.Object,
-            _mockHostApplicationLifetime.Object,
+            mockHostApplicationLifetime.Object,
             NullLogger<DashboardServiceImpl>.Instance);
     }
 
@@ -46,7 +40,8 @@ public class WatchResourcesTests
             .ReturnsAsync(MockResourceSubscription());
 
         // Act
-        using var call = _dashboardService.WatchResources(new WatchResourcesRequest { IsReconnect = true }, responseStream, callContext);
+        using var call = _dashboardService.WatchResources(new WatchResourcesRequest { IsReconnect = true },
+            responseStream, callContext);
 
         // Assert
         call.IsCompleted.Should().BeTrue();
@@ -54,7 +49,7 @@ public class WatchResourcesTests
         responseStream.Complete();
 
         var allMessages = new List<WatchResourcesUpdate>();
-        await foreach (var message in responseStream.ReadAllAsync().ConfigureAwait(false))
+        await foreach (var message in responseStream.ReadAllAsync().WithCancellation(cts.Token).ConfigureAwait(false))
         {
             allMessages.Add(message);
         }
@@ -84,7 +79,8 @@ public class WatchResourcesTests
             .ReturnsAsync(MockResourceSubscription());
 
         // Act
-        using var call = _dashboardService.WatchResources(new WatchResourcesRequest { IsReconnect = true }, responseStream, callContext);
+        using var call = _dashboardService.WatchResources(new WatchResourcesRequest { IsReconnect = true },
+            responseStream, callContext);
 
         // Assert
         call.IsCompleted.Should().BeTrue();
@@ -92,7 +88,7 @@ public class WatchResourcesTests
         responseStream.Complete();
 
         var allMessages = new List<WatchResourcesUpdate>();
-        await foreach (var message in responseStream.ReadAllAsync().ConfigureAwait(false))
+        await foreach (var message in responseStream.ReadAllAsync().WithCancellation(cts.Token).ConfigureAwait(false))
         {
             allMessages.Add(message);
         }
@@ -143,7 +139,7 @@ public class WatchResourcesTests
         responseStream.Complete();
 
         var allMessages = new List<WatchResourcesUpdate>();
-        await foreach (var message in responseStream.ReadAllAsync().ConfigureAwait(false))
+        await foreach (var message in responseStream.ReadAllAsync().WithCancellation(cts.Token).ConfigureAwait(false))
         {
             allMessages.Add(message);
         }
@@ -161,7 +157,7 @@ public class WatchResourcesTests
         var callContext = TestServerCallContext.Create(cancellationToken: cts.Token);
         var responseStream = new TestServerStreamWriter<WatchResourcesUpdate>(callContext);
 
-        var initialData = new List<Resource>();
+        IReadOnlyList<Resource> initialData = new List<Resource>();
         var emptyUpdate = new WatchResourcesChange(); // Neither Upsert nor Delete
 
         var updates = new List<WatchResourcesChange?> { emptyUpdate }.ToAsyncEnumerable();
@@ -171,7 +167,7 @@ public class WatchResourcesTests
             .ReturnsAsync(new ResourceSubscription(initialData, updates));
 
         // Act
-        Func<Task> act = async () =>
+        var act = async () =>
         {
             using var call = _dashboardService.WatchResources(new WatchResourcesRequest(), responseStream, callContext);
             await call.ConfigureAwait(false);
@@ -180,7 +176,6 @@ public class WatchResourcesTests
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>("Empty resource updates are not allowed");
     }
-
 }
 
 internal static class Extensions
@@ -191,6 +186,7 @@ internal static class Extensions
         {
             yield return item;
         }
+
         await Task.CompletedTask.ConfigureAwait(true);
     }
 }
