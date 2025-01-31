@@ -13,7 +13,7 @@ public sealed class ServiceInformationTests
     {
         IServiceInformationProvider sut = new AssemblyServiceInformationProvider();
 
-        sut.GetServiceInformation().Version.Should().Be("0.3.1");
+        sut.GetServiceInformation().Version.Should().Be("0.3.2");
         sut.GetServiceInformation().Name.Should().Be("Aspire.ResourceService.Standalone.Server");
     }
 
