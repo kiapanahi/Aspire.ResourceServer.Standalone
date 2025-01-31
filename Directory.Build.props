@@ -17,6 +17,6 @@
 
     <Description>A standalone resouce server for .NET Aspire</Description>
 
-    <Version>0.3.1</Version>
+    <Version>0.3.2</Version>
   </PropertyGroup>
 </Project>

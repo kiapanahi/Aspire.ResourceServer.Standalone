@@ -68,26 +68,33 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
         }
     }
 
-    public async IAsyncEnumerable<string> GerResourceLogs(string resourceName,
+    public async IAsyncEnumerable<ResourceLogEntry> GerResourceLogs(string resourceName,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var containers = await GetContainers().ConfigureAwait(false);
 
-        var container = containers.Single(c => c.Names.Contains(resourceName));
+        var container = containers.Single(c => c.Names.First().Replace("/", "").Equals(resourceName, StringComparison.Ordinal));
 
-        var notificationChannel = Channel.CreateUnbounded<string>();
+        var notificationChannel = Channel.CreateUnbounded<ResourceLogEntry>();
 
         void WriteToChannel(string log)
         {
-            notificationChannel.Writer.TryWrite(log);
+            notificationChannel.Writer.TryWrite(new ResourceLogEntry(resourceName, log));
         }
 
         IProgress<string> p = new Progress<string>(WriteToChannel);
 
-        _ = dockerClient.Containers
-            .GetContainerLogsAsync(container.ID,
-                new ContainerLogsParameters() { ShowStdout = true, ShowStderr = true, Follow = true },
-                cancellationToken, p);
+        try
+        {
+            _ = dockerClient.Containers.GetContainerLogsAsync(container.ID,
+                new() { ShowStdout = true, ShowStderr = true, Follow = true },
+                cancellationToken,
+                p);
+        }
+        catch (Exception e) when (e is TaskCanceledException or OperationCanceledException)
+        {
+            notificationChannel.Writer.Complete();
+        }
 
         await foreach (var logItem in notificationChannel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
         {
