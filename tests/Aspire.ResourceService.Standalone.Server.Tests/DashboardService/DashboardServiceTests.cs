@@ -90,7 +90,7 @@ public class DashboardServiceTests
     public async Task WatchResourcesLogs()
     {
         // Arrange
-        var logs = new List<string> { "Log1", "Log2" };
+        var logs = new List<ResourceLogEntry> { new("resource", "log-1"), new("resource", "log-2") };
         _mockResourceProvider
             .Setup(x => x.GerResourceLogs(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(logs.ToAsyncEnumerable());
@@ -113,8 +113,8 @@ public class DashboardServiceTests
         var update = await responseStream.ReadNextAsync().ConfigureAwait(true);
         update.Should().NotBeNull();
         update!.LogLines.Should().HaveCount(2);
-        update.LogLines[0].Text.Should().Be(logs[0]);
-        update.LogLines[1].Text.Should().Be(logs[1]);
+        update.LogLines[0].Text.Should().Be(logs[0].Line);
+        update.LogLines[1].Text.Should().Be(logs[1].Line);
     }
 
 }

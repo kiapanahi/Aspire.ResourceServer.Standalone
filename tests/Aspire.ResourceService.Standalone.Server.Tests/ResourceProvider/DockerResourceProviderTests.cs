@@ -87,7 +87,7 @@ public class DockerResourceProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task GerResourceLogsShouldReturnLogs()
+    public async Task GetResourceLogsShouldReturnLogs()
     {
         // Arrange
         var cts = new CancellationTokenSource();
@@ -97,6 +97,55 @@ public class DockerResourceProviderTests : IDisposable
 
         _dockerClientMock.Setup(c =>
                 c.Containers.ListContainersAsync(It.IsAny<ContainersListParameters>(), CancellationToken.None))
+            .ReturnsAsync(containers);
+
+        var logs = new List<ResourceLogEntry> { new("container1", "log1"), new("container1", "log2") };
+
+        _dockerClientMock
+            .Setup(c => c.Containers.GetContainerLogsAsync(
+                It.IsAny<string>(),
+                It.IsAny<ContainerLogsParameters>(),
+                cts.Token,
+                It.IsAny<IProgress<string>>()))
+            .Callback<string, ContainerLogsParameters, CancellationToken, IProgress<string>>(
+                (id, parameters, token, progress) =>
+                {
+                    foreach (var log in logs)
+                    {
+                        progress.Report(log.Line);
+                    }
+                })
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var resultLogs = new List<ResourceLogEntry>();
+        try
+        {
+            await foreach (var log in _dockerResourceProvider.GerResourceLogs("container1", cts.Token)
+                               .ConfigureAwait(false))
+            {
+                resultLogs.Add(log);
+            }
+        }
+        catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException)
+        {
+            // cts.Task is cancelled mimicking the end of the log stream.
+            // Swallow
+        }
+
+        // Assert
+        resultLogs.Should().BeEquivalentTo(logs);
+    }
+
+    [Fact]
+    public async Task GetResourceLogsCancelledToken()
+    {
+        // Arrange
+        var cts = new CancellationTokenSource();
+
+        var containers = new List<ContainerListResponse> { new() { ID = "1", Names = ["container1"] } };
+
+        _dockerClientMock.Setup(c => c.Containers.ListContainersAsync(It.IsAny<ContainersListParameters>(), CancellationToken.None))
             .ReturnsAsync(containers);
 
         var logs = new List<string> { "log1", "log2" };
@@ -118,7 +167,8 @@ public class DockerResourceProviderTests : IDisposable
             .Returns(Task.CompletedTask);
 
         // Act
-        var resultLogs = new List<string>();
+        cts.Cancel(true);
+        var resultLogs = new List<ResourceLogEntry>();
         try
         {
             await foreach (var log in _dockerResourceProvider.GerResourceLogs("container1", cts.Token)
@@ -134,7 +184,7 @@ public class DockerResourceProviderTests : IDisposable
         }
 
         // Assert
-        resultLogs.Should().BeEquivalentTo(logs);
+        resultLogs.Should().BeEmpty();
     }
 
     public void Dispose()

@@ -34,8 +34,7 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
         });
     }
 
-    public override async Task WatchResources(WatchResourcesRequest request,
-        IServerStreamWriter<WatchResourcesUpdate> responseStream, ServerCallContext context)
+    public override async Task WatchResources(WatchResourcesRequest request, IServerStreamWriter<WatchResourcesUpdate> responseStream, ServerCallContext context)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostApplicationLifetime.ApplicationStopping,
             context.CancellationToken);
@@ -101,33 +100,29 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
         }
     }
 
-    public override async Task WatchResourceConsoleLogs(WatchResourceConsoleLogsRequest request,
-        IServerStreamWriter<WatchResourceConsoleLogsUpdate> responseStream, ServerCallContext context)
+    public override async Task WatchResourceConsoleLogs(WatchResourceConsoleLogsRequest request, IServerStreamWriter<WatchResourceConsoleLogsUpdate> responseStream, ServerCallContext context)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostApplicationLifetime.ApplicationStopping,
             context.CancellationToken);
 
         var update = new WatchResourceConsoleLogsUpdate();
         var lineNumber = 0;
-        while (!context.CancellationToken.IsCancellationRequested)
+        try
         {
-            try
+            await foreach (var log in _resourceProvider.GerResourceLogs(request.ResourceName, cts.Token)
+                               .ConfigureAwait(false))
             {
-                await foreach (var log in _resourceProvider.GerResourceLogs(request.ResourceName, cts.Token)
-                                   .ConfigureAwait(false))
-                {
-                    update.LogLines.Add(new ConsoleLogLine { Text = log, IsStdErr = false, LineNumber = ++lineNumber });
-                    await responseStream.WriteAsync(update, CancellationToken.None).ConfigureAwait(false);
-                }
+                update.LogLines.Add(new ConsoleLogLine { Text = log.Line, IsStdErr = false, LineNumber = ++lineNumber });
+                await responseStream.WriteAsync(update, CancellationToken.None).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) when (cts.Token.IsCancellationRequested)
-            {
-                // Ignore cancellation and just return.
-            }
-            catch (IOException) when (cts.Token.IsCancellationRequested)
-            {
-                // Ignore cancellation and just return. Cancelled writes throw IOException.
-            }
+        }
+        catch (OperationCanceledException) when (cts.Token.IsCancellationRequested)
+        {
+            // Ignore cancellation and just return.
+        }
+        catch (IOException) when (cts.Token.IsCancellationRequested)
+        {
+            // Ignore cancellation and just return. Cancelled writes throw IOException.
         }
     }
 }
