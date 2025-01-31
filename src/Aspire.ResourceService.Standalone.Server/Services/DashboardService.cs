@@ -132,8 +132,7 @@ internal static partial class WatchResourcesLogs
     [LoggerMessage(LogLevel.Trace, "Returning application information")]
     public static partial void ReturningApplicationInformation(this ILogger logger);
 
-    [LoggerMessage(Events.PreparingToGetResources, LogLevel.Trace,
-        "Preparing to get resources from the resource provider")]
+    [LoggerMessage(Events.PreparingToGetResources, LogLevel.Trace, "Preparing to get resources from the resource provider")]
     public static partial void GettingResourcesFromResourceProvider(this ILogger logger);
 
     [LoggerMessage(Events.ResourcesReceived, LogLevel.Trace, "Received {Count} resources from resource provider")]

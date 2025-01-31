@@ -14,14 +14,14 @@ using DashboardServiceImpl = Aspire.ResourceService.Standalone.Server.Services.D
 
 namespace Aspire.ResourceService.Standalone.Server.Tests.DashboardService;
 
-public class DashboardServiceTests
+public class WatchResourceLogsTests
 {
     private readonly Mock<IServiceInformationProvider> _mockServiceInformationProvider;
     private readonly Mock<IResourceProvider> _mockResourceProvider;
     private readonly Mock<IHostApplicationLifetime> _mockHostApplicationLifetime;
     private readonly DashboardServiceImpl _dashboardService;
 
-    public DashboardServiceTests()
+    public WatchResourceLogsTests()
     {
         _mockServiceInformationProvider = new Mock<IServiceInformationProvider>();
         _mockResourceProvider = new Mock<IResourceProvider>();
@@ -31,59 +31,6 @@ public class DashboardServiceTests
             _mockResourceProvider.Object,
             _mockHostApplicationLifetime.Object,
             NullLogger<DashboardServiceImpl>.Instance);
-    }
-
-    [Fact]
-    public async Task GetApplicationInformationTest()
-    {
-        // Arrange
-        var expectedName = Constants.ServiceName;
-        _mockServiceInformationProvider
-            .Setup(x => x.GetServiceInformation())
-            .Returns(new ServiceInformation { Name = expectedName });
-
-        var request = new ApplicationInformationRequest();
-        var context = TestServerCallContext.Create();
-
-        // Act
-        var response = await _dashboardService.GetApplicationInformation(request, context).ConfigureAwait(true);
-
-        // Assert
-        response.ApplicationName.Should().Be(expectedName);
-    }
-
-    [Fact]
-    public async Task WatchResourcesStreamsData()
-    {
-        // Arrange
-        var cts = new CancellationTokenSource();
-        var callContext = TestServerCallContext.Create(cancellationToken: cts.Token);
-        var responseStream = new TestServerStreamWriter<WatchResourcesUpdate>(callContext);
-
-        _mockResourceProvider
-            .Setup(x => x.GetResources(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(MockResourceSubscription());
-
-        // Act
-        using var call = _dashboardService.WatchResources(new WatchResourcesRequest { IsReconnect = true }, responseStream, callContext);
-
-        // Assert
-        call.IsCompleted.Should().BeTrue();
-        await call.ConfigureAwait(true);
-        responseStream.Complete();
-
-        var allMessages = new List<WatchResourcesUpdate>();
-        await foreach (var message in responseStream.ReadAllAsync().ConfigureAwait(false))
-        {
-            allMessages.Add(message);
-        }
-
-        allMessages.Should().ContainSingle();
-
-        static ResourceSubscription MockResourceSubscription()
-        {
-            return new ResourceSubscription([new()], Enumerable.Empty<WatchResourcesChange>().ToAsyncEnumerable());
-        }
     }
 
     [Fact]
@@ -119,14 +66,3 @@ public class DashboardServiceTests
 
 }
 
-internal static class Extensions
-{
-    internal static async IAsyncEnumerable<T> ToAsyncEnumerable<T>(this IEnumerable<T> enumerable)
-    {
-        foreach (var item in enumerable)
-        {
-            yield return item;
-        }
-        await Task.CompletedTask.ConfigureAwait(true);
-    }
-}
