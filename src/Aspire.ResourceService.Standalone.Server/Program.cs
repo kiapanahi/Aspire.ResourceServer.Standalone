@@ -8,7 +8,7 @@ builder.AddServiceDefaults();
 
 // Add services to the container.
 builder.Services.AddServiceInformationProvider();
-builder.Services.AddResourceProvider();
+builder.Services.AddResourceProvider(builder.Configuration);
 
 builder.Services.AddGrpc();
 builder.Services.AddGrpcReflection();

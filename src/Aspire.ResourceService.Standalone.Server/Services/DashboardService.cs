@@ -105,13 +105,13 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostApplicationLifetime.ApplicationStopping,
             context.CancellationToken);
 
-        var update = new WatchResourceConsoleLogsUpdate();
-        var lineNumber = 0;
         try
         {
+            var lineNumber = 0;
             await foreach (var log in _resourceProvider.GerResourceLogs(request.ResourceName, cts.Token)
                                .ConfigureAwait(false))
             {
+                var update = new WatchResourceConsoleLogsUpdate();
                 update.LogLines.Add(new ConsoleLogLine { Text = log.Line, IsStdErr = false, LineNumber = ++lineNumber });
                 await responseStream.WriteAsync(update, CancellationToken.None).ConfigureAwait(false);
             }
