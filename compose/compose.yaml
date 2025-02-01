@@ -33,6 +33,14 @@ services:
       - "4317:18889"
     networks:
       - dev_network
+
+  resource-server:
+    image: aspire-resource-server:latest
+    ports:
+      - "8043:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # This is important so that the resource server can query docker engine
+
 networks:
   dev_network:
     driver: bridge
