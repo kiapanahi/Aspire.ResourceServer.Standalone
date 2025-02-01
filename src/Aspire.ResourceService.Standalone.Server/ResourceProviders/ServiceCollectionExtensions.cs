@@ -14,6 +14,7 @@ internal static class ServiceCollectionExtensions
         {
             services.AddDockerResourceProvider();
         }
+
         if (configuration["UseK8s"] == "True")
         {
             services.Configure<KubernetesResourceProviderConfiguration>(

@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
-using Aspire.Dashboard.Model;
 using Aspire.ResourceService.Proto.V1;
 using Aspire.ResourceService.Standalone.Server.ResourceProviders.K8s.Models;
 using Google.Protobuf.WellKnownTypes;
@@ -12,20 +11,8 @@ namespace Aspire.ResourceService.Standalone.Server.ResourceProviders.K8s;
 
 internal sealed partial class KubernetesResourceProvider(Kubernetes kubernetes, IOptions<KubernetesResourceProviderConfiguration> configuration, ILogger<KubernetesResourceProvider> logger) : IResourceProvider, IDisposable
 {
-    //private readonly Kubernetes _kubernetes;
-    //private readonly SemaphoreSlim _syncRoot = new(1);
-    //private readonly List<KubernetesContainer> _containers = [];
-    //private readonly KubernetesResourceProviderConfiguration _configuration;
-    //private bool _disposedValue;
-    //public KubernetesResourceProvider(Kubernetes kubernetes, IOptions<KubernetesResourceProviderConfiguration> configuration, ILogger<KubernetesResourceProvider> logger)
-    //{
-    //    _kubernetes = kubernetes ?? throw new ArgumentNullException(nameof(kubernetes));
-    //    _configuration = configuration?.Value ?? throw new ArgumentNullException(nameof(configuration));
-    //    _logger = logger;
-    //}
     public async Task<ResourceSubscription> GetResources(CancellationToken cancellationToken)
     {
-        logger.Test("GETTING RESOURCES!!!!");
         var containers = await GetKubernetesContainers().ConfigureAwait(false);
         var resources = containers.Select(Resource.FromK8sContainer).ToList().AsReadOnly();
 
@@ -94,18 +81,15 @@ internal sealed partial class KubernetesResourceProvider(Kubernetes kubernetes, 
 
             _ = Task.Run(() => WatchEvents(cancellationToken), cancellationToken).ConfigureAwait(false);
             
-            //_ = dockerClient.System.MonitorEventsAsync(new ContainerEventsParameters(), progress, cancellation);
-            //logger.MonitoringDockerEventsStarted();
-
             await foreach (var msg in channel.Reader.ReadAllAsync(cancellation).ConfigureAwait(false))
             {
                 logger.CapturedKubernetesChange(System.Text.Json.JsonSerializer.Serialize(msg));
 
-                if (!string.Equals(msg.Type, KnownResourceTypes.Container, StringComparison.OrdinalIgnoreCase))
-                {
-                    logger.SkippingChange(msg.Type);
-                    continue;
-                }
+                //if (!string.Equals(msg.Type, KnownResourceTypes.Container, StringComparison.OrdinalIgnoreCase))
+                //{
+                //    logger.SkippingChange(msg.Type);
+                //    continue;
+                //}
 
                 yield return await GetChangeForStartedContainer(msg.ContainerId).ConfigureAwait(false);
             }
