@@ -102,17 +102,22 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
 
     public override async Task WatchResourceConsoleLogs(WatchResourceConsoleLogsRequest request, IServerStreamWriter<WatchResourceConsoleLogsUpdate> responseStream, ServerCallContext context)
     {
+        _logger.StartedWatchingResourceConsoleLogs(request.ResourceName);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostApplicationLifetime.ApplicationStopping,
             context.CancellationToken);
 
-        var update = new WatchResourceConsoleLogsUpdate();
         var lineNumber = 0;
         try
         {
+            _logger.AwaitingLogStream(request.ResourceName);
             await foreach (var log in _resourceProvider.GerResourceLogs(request.ResourceName, cts.Token)
                                .ConfigureAwait(false))
             {
-                update.LogLines.Add(new ConsoleLogLine { Text = log.Line, IsStdErr = false, LineNumber = ++lineNumber });
+                _logger.GotLogEntry(log);
+                var update = new WatchResourceConsoleLogsUpdate();
+                update.LogLines.Add(new ConsoleLogLine { Text = log.Text, IsStdErr = false, LineNumber = ++lineNumber });
+
+                _logger.WritingLogToOutputStream(update);
                 await responseStream.WriteAsync(update, CancellationToken.None).ConfigureAwait(false);
             }
         }
@@ -167,4 +172,19 @@ internal static partial class WatchResourcesLogs
         internal const int ResourceUpdateReceived = 107;
         internal const int ErrorWatchingResources = 501;
     }
+}
+
+internal static partial class WatchResourceConsoleLogsLogs
+{
+    [LoggerMessage(LogLevel.Trace, "Started watching console logs for resource: {Resource}")]
+    public static partial void StartedWatchingResourceConsoleLogs(this ILogger<DashboardService> logger, string resource);
+
+    [LoggerMessage(LogLevel.Trace, "Awaiting log stream for resource: {Resource}")]
+    public static partial void AwaitingLogStream(this ILogger<DashboardService> logger, string resource);
+
+    [LoggerMessage(LogLevel.Trace, "Got log entry from stream: {Entry}")]
+    public static partial void GotLogEntry(this ILogger<DashboardService> logger, ResourceLogEntry entry);
+
+    [LoggerMessage(LogLevel.Trace, "Writing log item to stream: {Update}")]
+    public static partial void WritingLogToOutputStream(this ILogger<DashboardService> logger, WatchResourceConsoleLogsUpdate update);
 }

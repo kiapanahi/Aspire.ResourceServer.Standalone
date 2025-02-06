@@ -112,7 +112,7 @@ public class DockerResourceProviderTests : IDisposable
                 {
                     foreach (var log in logs)
                     {
-                        progress.Report(log.Line);
+                        progress.Report(log.Text);
                     }
                 })
             .Returns(Task.CompletedTask);

@@ -12,13 +12,4 @@ public sealed record class ResourceSubscription(
     IReadOnlyList<Resource> InitialData,
     IAsyncEnumerable<WatchResourcesChange?> ChangeStream);
 
-public readonly struct ResourceLogEntry
-{
-    public ResourceLogEntry(string resourceName, string line)
-    {
-        Line = line;
-        LogType = resourceName;
-    }
-    public string Line { get; }
-    public string LogType { get; }
-}
+public readonly record struct ResourceLogEntry(string ResourceName, string Text);
