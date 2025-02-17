@@ -15,7 +15,7 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
     {
         var containers = await GetContainers().ConfigureAwait(false);
 
-        var resources = containers.Select(Resource.FromContainer).ToList().AsReadOnly();
+        var resources = containers.Select(Resource.FromDockerContainer).ToList().AsReadOnly();
 
         return new ResourceSubscription(resources, UpdateStream(cancellationToken));
 
@@ -58,7 +58,7 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
             var containers = await GetContainers().ConfigureAwait(false);
             var container =
                 containers.Single(c => string.Equals(c.ID, containerId, StringComparison.OrdinalIgnoreCase));
-            var resource = Resource.FromContainer(container);
+            var resource = Resource.FromDockerContainer(container);
 
             return new() { Upsert = resource };
         }
@@ -68,7 +68,7 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
         }
     }
 
-    public async IAsyncEnumerable<ResourceLogEntry> GerResourceLogs(string resourceName,
+    public async IAsyncEnumerable<ResourceLogEntry> GetResourceLogs(string resourceName,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var containers = await GetContainers().ConfigureAwait(false);

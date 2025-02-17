@@ -121,7 +121,7 @@ public class DockerResourceProviderTests : IDisposable
         var resultLogs = new List<ResourceLogEntry>();
         try
         {
-            await foreach (var log in _dockerResourceProvider.GerResourceLogs("container1", cts.Token)
+            await foreach (var log in _dockerResourceProvider.GetResourceLogs("container1", cts.Token)
                                .ConfigureAwait(false))
             {
                 resultLogs.Add(log);
@@ -171,7 +171,7 @@ public class DockerResourceProviderTests : IDisposable
         var resultLogs = new List<ResourceLogEntry>();
         try
         {
-            await foreach (var log in _dockerResourceProvider.GerResourceLogs("container1", cts.Token)
+            await foreach (var log in _dockerResourceProvider.GetResourceLogs("container1", cts.Token)
                                .ConfigureAwait(false))
             {
                 resultLogs.Add(log);

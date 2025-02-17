@@ -9,7 +9,7 @@ using k8s.Models;
 
 namespace Aspire.ResourceService.Standalone.Server.ResourceProviders.K8s;
 
-internal sealed partial class KubernetesResourceProvider(Kubernetes kubernetes, IOptions<KubernetesResourceProviderConfiguration> configuration, ILogger<KubernetesResourceProvider> logger) : IResourceProvider, IDisposable
+internal sealed partial class KubernetesResourceProvider(IKubernetes kubernetes, IOptions<KubernetesResourceProviderConfiguration> configuration, ILogger<KubernetesResourceProvider> logger) : IResourceProvider, IDisposable
 {
     public async Task<ResourceSubscription> GetResources(CancellationToken cancellationToken)
     {
@@ -61,8 +61,7 @@ internal sealed partial class KubernetesResourceProvider(Kubernetes kubernetes, 
                                 {
                                     containerState = "Waiting";
                                 }
-                                //channel.Writer.TryWrite($"[{type}] - Pod: {item.Metadata.Name} - Pod Phase: {item.Status.Phase} - Container: {container.Name} - ContainerState: {containerState}");
-
+                              
                                 var message = new K8sMessage
                                 {
                                     ContainerState = containerState,
@@ -85,18 +84,12 @@ internal sealed partial class KubernetesResourceProvider(Kubernetes kubernetes, 
             {
                 logger.CapturedKubernetesChange(System.Text.Json.JsonSerializer.Serialize(msg));
 
-                //if (!string.Equals(msg.Type, KnownResourceTypes.Container, StringComparison.OrdinalIgnoreCase))
-                //{
-                //    logger.SkippingChange(msg.Type);
-                //    continue;
-                //}
-
                 yield return await GetChangeForStartedContainer(msg.ContainerId).ConfigureAwait(false);
             }
         }
     }
 
-    public async IAsyncEnumerable<ResourceLogEntry> GerResourceLogs(string resourceName, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async IAsyncEnumerable<ResourceLogEntry> GetResourceLogs(string resourceName, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var pods = await kubernetes.CoreV1.ListNamespacedPodAsync(
                     namespaceParameter: configuration.Value.Namespace,
@@ -121,16 +114,26 @@ internal sealed partial class KubernetesResourceProvider(Kubernetes kubernetes, 
                     follow: true
                 ).ConfigureAwait(false);
 
-        using (var reader = new StreamReader(logStream))
+        using var reader = new StreamReader(logStream);
+
+        cancellationToken.Register(reader.Close);
+
+        while (!reader.EndOfStream)
         {
-            while (!reader.EndOfStream)
+            string? logline;
+            try
             {
-                
-                string? logline = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-                if (logline is not null)
-                {
-                    yield return new ResourceLogEntry(resourceName, logline);
-                }
+                logline = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (IOException)
+            {
+                Console.WriteLine($"⛔ Log streaming canceled for {resourceName}");
+                yield break;
+            }
+
+            if (logline is not null)
+            {
+                yield return new ResourceLogEntry(resourceName, logline);
             }
         }
     }
@@ -154,27 +157,28 @@ internal sealed partial class KubernetesResourceProvider(Kubernetes kubernetes, 
 
     public async ValueTask<List<KubernetesContainer>> GetKubernetesContainers()
     {
+        string[] srvNames = configuration.Value.Servicenames?.Split(';') ?? throw new InvalidOperationException();
+
         var containers = new List<KubernetesContainer>();
-        if (configuration.Value.ServiceNames.Length == 0)
+
+        if (srvNames.Length == 0)
         {
             throw new InvalidOperationException("No service names provided!");
         }
 
-        var pods = await kubernetes.CoreV1.ListNamespacedPodAsync(
-                namespaceParameter: configuration.Value.Namespace
-                )
-                .ConfigureAwait(false);
+        var pods = await kubernetes.CoreV1.ListNamespacedPodAsync(namespaceParameter: configuration.Value.Namespace)
+            .ConfigureAwait(false);
 
-        foreach (var serviceName in configuration.Value.ServiceNames)
+        if (pods.Items.Count == 0)
+        {
+            return containers;
+        }
+
+        foreach (var serviceName in srvNames)
         {
             if (string.IsNullOrWhiteSpace(serviceName))
             {
                 continue;
-            }
-
-            if (pods.Items.Count == 0)
-            {
-
             }
 
             var pod = pods.Items.Where(p => p.Metadata.Labels["app"] == serviceName &&
@@ -247,19 +251,8 @@ internal sealed partial class KubernetesResourceProvider(Kubernetes kubernetes, 
 
 internal static partial class KubernetesResourceProviderLogs
 {
-    [LoggerMessage(LogLevel.Debug, "Monitoring Kubernetes events started")]
-    public static partial void MonitoringKubernetesEventsStarted(this ILogger<KubernetesResourceProvider> logger);
-
-    [LoggerMessage(LogLevel.Debug, "Waiting for Kubernetes events")]
-    public static partial void WaitingForKubernetesEvents(this ILogger<KubernetesResourceProvider> logger);
-
     [LoggerMessage(LogLevel.Debug, "Captured change: {Change}")]
     public static partial void CapturedKubernetesChange(this ILogger<KubernetesResourceProvider> logger, string change);
-
-    [LoggerMessage(LogLevel.Debug, "Skipping change of type: {Change}")]
-    public static partial void SkippingChange(this ILogger<KubernetesResourceProvider> logger, string change);
-    [LoggerMessage(LogLevel.Information, "LOGGING SOMETHING: {Value}")]
-    public static partial void Test(this ILogger<KubernetesResourceProvider> logger, string value);
 }
 
 internal sealed partial class KubernetesResourceProvider : IDisposable

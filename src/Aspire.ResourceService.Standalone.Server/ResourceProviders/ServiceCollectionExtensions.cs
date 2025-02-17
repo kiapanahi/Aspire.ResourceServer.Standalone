@@ -10,17 +10,14 @@ internal static class ServiceCollectionExtensions
     public static IServiceCollection AddResourceProvider(this IServiceCollection services, IConfiguration configuration)
     {
 
-        if (configuration["UseDocker"] == "True")
+        if (configuration["ResourceProvider"] == "docker")
         {
             services.AddDockerResourceProvider();
         }
 
-        if (configuration["UseK8s"] == "True")
+        if (configuration["ResourceProvider"] == "k8s")
         {
-            services.Configure<KubernetesResourceProviderConfiguration>(
-                configuration.GetSection("KubernetesResourceProviderConfiguration"));
-
-            services.AddKubernetesResourceProvider();
+            services.AddKubernetesResourceProvider(configuration);
         }
 
         return services;
@@ -34,15 +31,18 @@ internal static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddKubernetesResourceProvider(this IServiceCollection services)
+    public static IServiceCollection AddKubernetesResourceProvider(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<KubernetesResourceProviderConfiguration>(
+                configuration.GetSection("KubernetesResourceProviderConfiguration"));
+
         if (KubernetesClientConfiguration.IsInCluster())
         {
-            services.AddSingleton<Kubernetes>(new Kubernetes(KubernetesClientConfiguration.InClusterConfig()));
+            services.AddSingleton<IKubernetes>(new Kubernetes(KubernetesClientConfiguration.InClusterConfig()));
         }
         else
         {
-            services.AddSingleton<Kubernetes>(new Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigFile()));
+            services.AddSingleton<IKubernetes>(new Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigFile()));
         }
 
         services.AddSingleton<IResourceProvider, KubernetesResourceProvider>();

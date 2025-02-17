@@ -108,7 +108,7 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
         try
         {
             var lineNumber = 0;
-            await foreach (var log in _resourceProvider.GerResourceLogs(request.ResourceName, cts.Token)
+            await foreach (var log in _resourceProvider.GetResourceLogs(request.ResourceName, cts.Token)
                                .ConfigureAwait(false))
             {
                 var update = new WatchResourceConsoleLogsUpdate();
