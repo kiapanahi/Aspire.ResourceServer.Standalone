@@ -115,7 +115,7 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
             {
                 _logger.GotLogEntry(log);
                 var update = new WatchResourceConsoleLogsUpdate();
-                update.LogLines.Add(new ConsoleLogLine { Text = log.Line, IsStdErr = false, LineNumber = ++lineNumber });
+                update.LogLines.Add(new ConsoleLogLine { Text = log.Text, IsStdErr = false, LineNumber = ++lineNumber });
                 
                 _logger.WritingLogToOutputStream(update);
                 await responseStream.WriteAsync(update, CancellationToken.None).ConfigureAwait(false);

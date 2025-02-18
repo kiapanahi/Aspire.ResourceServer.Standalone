@@ -127,7 +127,6 @@ internal sealed partial class KubernetesResourceProvider(IKubernetes kubernetes,
             }
             catch (IOException)
             {
-                Console.WriteLine($"⛔ Log streaming canceled for {resourceName}");
                 yield break;
             }
 
