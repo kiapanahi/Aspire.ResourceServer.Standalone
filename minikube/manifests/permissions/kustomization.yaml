@@ -1,0 +1,7 @@
+resources:
+- serviceaccount.yaml
+- clusterrole.yaml
+- clusterrolebinding.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true

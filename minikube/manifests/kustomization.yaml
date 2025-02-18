@@ -1,0 +1,13 @@
+namespace: test
+
+resources:
+- permissions
+- rabbitmq-deployment.yaml
+- redis-deployment.yaml
+- namespace.yaml
+- dashboard.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+
