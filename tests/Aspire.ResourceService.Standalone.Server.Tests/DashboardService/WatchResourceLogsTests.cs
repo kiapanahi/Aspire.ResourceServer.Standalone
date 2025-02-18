@@ -42,7 +42,7 @@ public class WatchResourceLogsTests
             .Setup(x => x.GetResourceLogs(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(logs.ToAsyncEnumerable());
 
-        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
         var callContext = TestServerCallContext.Create(cancellationToken: cts.Token);
         var responseStream = new TestServerStreamWriter<WatchResourceConsoleLogsUpdate>(callContext);
 
@@ -55,13 +55,17 @@ public class WatchResourceLogsTests
         await call.ConfigureAwait(true);
 
         responseStream.Complete();
+        List<ConsoleLogLine> logLines = [];
 
+        await foreach (var logItem in responseStream.ReadAllAsync().ConfigureAwait(true))
+        {
+            logItem.LogLines.Should().ContainSingle();
+            logLines.AddRange(logItem.LogLines);
+        }
         // Assert
-        var update = await responseStream.ReadNextAsync().ConfigureAwait(true);
-        update.Should().NotBeNull();
-        update!.LogLines.Should().HaveCount(2);
-        update.LogLines[0].Text.Should().Be(logs[0].Line);
-        update.LogLines[1].Text.Should().Be(logs[1].Line);
+        logLines.Should().HaveCount(2);
+        logLines[0].Text.Should().Be(logs[0].Text);
+        logLines[1].Text.Should().Be(logs[1].Text);
     }
 
 }
