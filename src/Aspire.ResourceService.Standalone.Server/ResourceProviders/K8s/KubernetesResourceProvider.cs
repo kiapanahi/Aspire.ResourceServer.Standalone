@@ -9,7 +9,7 @@ using k8s.Models;
 
 namespace Aspire.ResourceService.Standalone.Server.ResourceProviders.K8s;
 
-internal sealed partial class KubernetesResourceProvider(IKubernetes kubernetes, IOptions<KubernetesResourceProviderConfiguration> configuration, ILogger<KubernetesResourceProvider> logger) : IResourceProvider, IDisposable
+internal sealed partial class KubernetesResourceProvider(IKubernetes kubernetes, IOptions<KubernetesResourceProviderConfiguration> configuration, ILogger<KubernetesResourceProvider> logger) : IResourceProvider
 {
     public async Task<ResourceSubscription> GetResources(CancellationToken cancellationToken)
     {
@@ -33,48 +33,27 @@ internal sealed partial class KubernetesResourceProvider(IKubernetes kubernetes,
 
                 watch.Watch<V1Pod, V1PodList>((type, item) =>
                 {
-                    if (item.Status is not null)
+                    if (item.Status?.ContainerStatuses != null)
                     {
-                        if (item.Status.ContainerStatuses is not null)
+                        foreach (var container in item.Status.ContainerStatuses)
                         {
-                            foreach (var container in item.Status.ContainerStatuses)
+                            string containerState = container.State?.Running != null ? "Running"
+                                                    : container.State?.Terminated != null ? "Terminated"
+                                                    : container.State?.Waiting != null ? "Waiting"
+                                                    : "";
+
+                            var message = new K8sMessage
                             {
-                                var containerState = "";
+                                ContainerState = containerState,
+                                ContainerId = container.ContainerID,
+                                PodName = item.Metadata.Name,
+                                Type = type.ToString()
+                            };
 
-                                var startedAt = DateTime.Now;
-
-                                if (container.State.Running is not null)
-                                {
-                                    containerState = "Running";
-                                    if (container.State.Running.StartedAt is not null)
-                                    {
-                                        startedAt = (DateTime)container.State.Running.StartedAt;
-                                    }
-                                }
-
-                                if (container.State.Terminated is not null)
-                                {
-                                    containerState = "Terminated";
-                                }
-
-                                if (container.State.Waiting is not null)
-                                {
-                                    containerState = "Waiting";
-                                }
-                              
-                                var message = new K8sMessage
-                                {
-                                    ContainerState = containerState,
-                                    ContainerId = container.ContainerID,
-                                    PodName = item.Metadata.Name,
-                                    Type = type.ToString()
-                                };
-
-                                channel.Writer.TryWrite(message);
-                            }
+                            channel.Writer.TryWrite(message);
                         }
                     }
-                    
+
                 });
             }
 
@@ -256,7 +235,7 @@ internal static partial class KubernetesResourceProviderLogs
 
 internal sealed partial class KubernetesResourceProvider : IDisposable
 {
-    public bool _disposedValue;
+    private bool _disposedValue;
     public void Dispose()
     {
         Dispose(true);
