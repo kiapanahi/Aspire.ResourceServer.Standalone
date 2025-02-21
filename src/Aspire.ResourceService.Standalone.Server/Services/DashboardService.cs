@@ -110,13 +110,13 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
         try
         {
             _logger.AwaitingLogStream(request.ResourceName);
-            await foreach (var log in _resourceProvider.GerResourceLogs(request.ResourceName, cts.Token)
+            await foreach (var log in _resourceProvider.GetResourceLogs(request.ResourceName, cts.Token)
                                .ConfigureAwait(false))
             {
                 _logger.GotLogEntry(log);
                 var update = new WatchResourceConsoleLogsUpdate();
                 update.LogLines.Add(new ConsoleLogLine { Text = log.Text, IsStdErr = false, LineNumber = ++lineNumber });
-
+                
                 _logger.WritingLogToOutputStream(update);
                 await responseStream.WriteAsync(update, CancellationToken.None).ConfigureAwait(false);
             }

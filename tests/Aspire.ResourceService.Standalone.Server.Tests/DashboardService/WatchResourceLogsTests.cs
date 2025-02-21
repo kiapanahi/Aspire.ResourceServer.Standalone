@@ -39,7 +39,7 @@ public class WatchResourceLogsTests
         // Arrange
         var logs = new List<ResourceLogEntry> { new("resource", "log-1"), new("resource", "log-2") };
         _mockResourceProvider
-            .Setup(x => x.GerResourceLogs(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetResourceLogs(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(logs.ToAsyncEnumerable());
 
         var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));

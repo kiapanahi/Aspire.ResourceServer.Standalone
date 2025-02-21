@@ -4,7 +4,7 @@ namespace Aspire.ResourceService.Standalone.Server.ResourceProviders;
 
 public interface IResourceProvider
 {
-    IAsyncEnumerable<ResourceLogEntry> GerResourceLogs(string resourceName, CancellationToken cancellationToken);
+    IAsyncEnumerable<ResourceLogEntry> GetResourceLogs(string resourceName, CancellationToken cancellationToken);
     Task<ResourceSubscription> GetResources(CancellationToken cancellationToken);
 }
 
