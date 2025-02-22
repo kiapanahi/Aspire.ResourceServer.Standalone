@@ -6,7 +6,6 @@ using k8s;
 using Microsoft.Extensions.DependencyInjection;
 using static Aspire.ResourceService.Standalone.Server.Tests.TestConfigurationBuilder.TestConfigurationBuilder;
 
-
 namespace Aspire.ResourceService.Standalone.Server.Tests.ResourceProvider;
 
 public class ServiceCollectionExtensionsTests

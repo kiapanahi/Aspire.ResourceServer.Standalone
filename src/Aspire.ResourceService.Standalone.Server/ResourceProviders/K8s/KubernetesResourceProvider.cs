@@ -4,8 +4,8 @@ using Aspire.ResourceService.Proto.V1;
 using Aspire.ResourceService.Standalone.Server.ResourceProviders.K8s.Models;
 using Google.Protobuf.WellKnownTypes;
 using k8s;
-using Microsoft.Extensions.Options;
 using k8s.Models;
+using Microsoft.Extensions.Options;
 
 namespace Aspire.ResourceService.Standalone.Server.ResourceProviders.K8s;
 
@@ -58,7 +58,7 @@ internal sealed partial class KubernetesResourceProvider(IKubernetes kubernetes,
             }
 
             _ = Task.Run(() => WatchEvents(cancellationToken), cancellationToken).ConfigureAwait(false);
-            
+
             await foreach (var msg in channel.Reader.ReadAllAsync(cancellation).ConfigureAwait(false))
             {
                 logger.CapturedKubernetesChange(System.Text.Json.JsonSerializer.Serialize(msg));

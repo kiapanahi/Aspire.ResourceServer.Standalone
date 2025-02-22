@@ -5,13 +5,13 @@ using Aspire.ResourceService.Standalone.Server.Tests.ResourceProvider.K8s;
 using FluentAssertions;
 using k8s;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using static Aspire.ResourceService.Standalone.Server.Tests.TestConfigurationBuilder.TestConfigurationBuilder;
 
 namespace Aspire.ResourceService.Standalone.Server.Tests.ResourceProvider;
 
-public class KubernetesResourceProviderTests : IClassFixture<KubernetesFixture>,IDisposable
+public class KubernetesResourceProviderTests : IClassFixture<KubernetesFixture>, IDisposable
 {
     private readonly IConfiguration _configuration;
     private readonly KubernetesFixture _kubernetesFixture;
@@ -23,12 +23,19 @@ public class KubernetesResourceProviderTests : IClassFixture<KubernetesFixture>,
         _configuration = GetTestConfiguration("k8s");
         _kubernetesFixture = kubernetesFixture;
 
-        if (_kubernetesFixture.Kubernetes is null) { throw new InvalidOperationException(); }
+        if (_kubernetesFixture.Kubernetes is null)
+        {
+            throw new InvalidOperationException();
+        }
 
         _kubernetes = _kubernetesFixture.Kubernetes;
 
-        var resourceProviderConfiguration = _configuration.GetSection("KubernetesResourceProviderConfiguration").Get<KubernetesResourceProviderConfiguration>();
-        if (resourceProviderConfiguration is null) { throw new InvalidOperationException($"Invalid {nameof(KubernetesResourceProviderConfiguration)}"); }
+        var resourceProviderConfiguration = _configuration.GetSection("KubernetesResourceProviderConfiguration")
+            .Get<KubernetesResourceProviderConfiguration>();
+        if (resourceProviderConfiguration is null)
+        {
+            throw new InvalidOperationException($"Invalid {nameof(KubernetesResourceProviderConfiguration)}");
+        }
 
         _kubernetesResourceProvider = new KubernetesResourceProvider(_kubernetes,
             Options.Create(resourceProviderConfiguration),
@@ -39,7 +46,7 @@ public class KubernetesResourceProviderTests : IClassFixture<KubernetesFixture>,
     public async Task GetContainersFromKubernetes()
     {
         // Act
-        var containers = await _kubernetesResourceProvider.GetKubernetesContainers();
+        var containers = await _kubernetesResourceProvider.GetKubernetesContainers().ConfigureAwait(true);
 
         //Assert
         Assert.Equal(_kubernetesFixture.ContainerCount, containers.Count);
@@ -91,6 +98,7 @@ public class KubernetesResourceProviderTests : IClassFixture<KubernetesFixture>,
                 // Swallow
             }
         }
+
         // Act
         var tasks = new List<Task>();
 
@@ -99,7 +107,7 @@ public class KubernetesResourceProviderTests : IClassFixture<KubernetesFixture>,
             tasks.Add(GetResourceLogs(serviceName));
         }
 
-        await Task.WhenAll(tasks);
+        await Task.WhenAll(tasks).ConfigureAwait(true);
 
         // Assert
         resultLogs.Count.Should().BeGreaterThan(0);
