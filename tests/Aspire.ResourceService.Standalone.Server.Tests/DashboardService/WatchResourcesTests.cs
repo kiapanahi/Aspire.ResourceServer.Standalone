@@ -174,7 +174,8 @@ public class WatchResourcesTests
         };
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>("Empty resource updates are not allowed");
+        await act.Should().ThrowAsync<InvalidOperationException>("Empty resource updates are not allowed")
+            .ConfigureAwait(true);
     }
 }
 
