@@ -19,8 +19,7 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
 
         return new ResourceSubscription(resources, UpdateStream(cancellationToken));
 
-        async IAsyncEnumerable<WatchResourcesChange?> UpdateStream(
-            [EnumeratorCancellation] CancellationToken cancellation)
+        async IAsyncEnumerable<WatchResourcesChange?> UpdateStream([EnumeratorCancellation] CancellationToken cancellation)
         {
             var channel = Channel.CreateUnbounded<Message>();
             var progress = new Progress<Message>(message => channel.Writer.TryWrite(message));
@@ -68,8 +67,7 @@ internal sealed partial class DockerResourceProvider(IDockerClient dockerClient,
         }
     }
 
-    public async IAsyncEnumerable<ResourceLogEntry> GetResourceLogs(string resourceName,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async IAsyncEnumerable<ResourceLogEntry> GetResourceLogs(string resourceName, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var containers = await GetContainers().ConfigureAwait(false);
 
