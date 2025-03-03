@@ -1,4 +1,5 @@
 using Aspire.ResourceService.Standalone.Server.Diagnostics;
+using Aspire.ResourceService.Standalone.Server.Reporting;
 using Aspire.ResourceService.Standalone.Server.ResourceProviders;
 using Aspire.ResourceService.Standalone.Server.Services;
 
@@ -8,6 +9,7 @@ builder.AddServiceDefaults();
 
 // Add services to the container.
 builder.Services.AddServiceInformationProvider();
+builder.Services.AddResourceReporter();
 builder.Services.AddResourceProvider(builder.Configuration);
 
 builder.Services.AddGrpc();
