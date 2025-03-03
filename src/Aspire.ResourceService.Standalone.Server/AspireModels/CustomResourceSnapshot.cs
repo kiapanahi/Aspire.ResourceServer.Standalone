@@ -1,3 +1,5 @@
+/*
+
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -161,15 +163,6 @@ public sealed record ResourceStateSnapshot(string Text, string? Style)
         return s is null ? null : new(Text: s, Style: null);
     }
 }
-
-/// <summary>
-/// A snapshot of an environment variable.
-/// </summary>
-/// <param name="Name">The name of the environment variable.</param>
-/// <param name="Value">The value of the environment variable.</param>
-/// <param name="IsFromSpec">Determines if this environment variable was defined in the resource explicitly or computed (for e.g. inherited from the process hierarchy).</param>
-[DebuggerDisplay("{Value}", Name = "{Name}")]
-public sealed record EnvironmentVariableSnapshot(string Name, string? Value, bool IsFromSpec);
 
 /// <summary>
 /// A snapshot of the url.
@@ -380,3 +373,5 @@ internal static class ResourceSnapshotBuilder
         return relationships.ToImmutable();
     }
 }
+
+*/
