@@ -8,7 +8,7 @@ using Moq;
 
 namespace Aspire.ResourceService.Standalone.Server.Tests.ResourceProvider;
 
-public class DockerResourceProviderTests : IDisposable
+public sealed class DockerResourceProviderTests : IDisposable
 {
     private readonly Mock<IDockerClient> _dockerClientMock;
     private readonly DockerResourceProvider _dockerResourceProvider;
