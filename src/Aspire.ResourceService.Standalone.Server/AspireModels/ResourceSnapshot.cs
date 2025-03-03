@@ -1,7 +1,6 @@
 // Copied from and inspired by .NET Aspire's ResourceSnapshot.cs
 // https://github.com/dotnet/aspire/blob/main/src/Aspire.Hosting/Dashboard/ResourceSnapshot.cs
 
-using System.Collections.Immutable;
 using System.Globalization;
 using Aspire.Dashboard.Model;
 using Google.Protobuf.WellKnownTypes;
@@ -21,12 +20,12 @@ internal abstract class ResourceSnapshot
     public required DateTime? CreationTimeStamp { get; init; }
     public required DateTime? StartTimeStamp { get; init; }
     public required DateTime? StopTimeStamp { get; init; }
-    public required ImmutableArray<EnvironmentVariableSnapshot> Environment { get; init; }
-    public required ImmutableArray<VolumeSnapshot> Volumes { get; init; }
-    public required ImmutableArray<UrlSnapshot> Urls { get; init; }
-    public required ImmutableArray<RelationshipSnapshot> Relationships { get; init; }
-    public required ImmutableArray<HealthReportSnapshot> HealthReports { get; init; }
-    public required ImmutableArray<ResourceCommandSnapshot> Commands { get; init; }
+    //public required ImmutableArray<EnvironmentVariableSnapshot> Environment { get; init; }
+    //public required ImmutableArray<VolumeSnapshot> Volumes { get; init; }
+    //public required ImmutableArray<UrlSnapshot> Urls { get; init; }
+    //public required ImmutableArray<RelationshipSnapshot> Relationships { get; init; }
+    //public required ImmutableArray<HealthReportSnapshot> HealthReports { get; init; }
+    //public required ImmutableArray<ResourceCommandSnapshot> Commands { get; init; }
 
     protected abstract IEnumerable<(string Key, Value Value, bool IsSensitive)> GetProperties();
 
@@ -43,7 +42,7 @@ internal abstract class ResourceSnapshot
             yield return (KnownProperties.Resource.CreateTime, CreationTimeStamp is null ? Value.ForNull() : Value.ForString(CreationTimeStamp.Value.ToString("O")), IsSensitive: false);
             yield return (KnownProperties.Resource.StartTime, StartTimeStamp is null ? Value.ForNull() : Value.ForString(StartTimeStamp.Value.ToString("O")), IsSensitive: false);
             yield return (KnownProperties.Resource.StopTime, StopTimeStamp is null ? Value.ForNull() : Value.ForString(StopTimeStamp.Value.ToString("O")), IsSensitive: false);
-            yield return (KnownProperties.Resource.HealthState, CustomResourceSnapshot.ComputeHealthStatus(HealthReports, State) is not { } healthStatus ? Value.ForNull() : Value.ForString(healthStatus.ToString()), IsSensitive: false);
+            //yield return (KnownProperties.Resource.HealthState, CustomResourceSnapshot.ComputeHealthStatus(HealthReports, State) is not { } healthStatus ? Value.ForNull() : Value.ForString(healthStatus.ToString()), IsSensitive: false);
 
             foreach (var property in GetProperties())
             {
