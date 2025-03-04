@@ -83,6 +83,44 @@ public sealed class ResourceReporterTests
         await cts.CancelAsync().DefaultTimeout();
     }
 
+    [Fact]
+    public async Task UpdatesAreStreamed()
+    {
+        var cts = new CancellationTokenSource();
+        var reporter = new ResourceReporter(NullLogger<ResourceReporter>.Instance, cts.Token);
+
+        var (_, subscription) = reporter.SubscribeResources();
+
+        var tcs = new TaskCompletionSource<IReadOnlyList<ResourceSnapshotChange>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var task = Task.Run(async () =>
+        {
+            await foreach (var change in subscription.ConfigureAwait(true))
+            {
+                tcs.SetResult(change);
+            }
+        });
+
+        var a = CreateResourceSnapshot("A");
+
+        await reporter.UpdateAsync(a, ResourceSnapshotChangeType.Upsert).DefaultTimeout().ConfigureAwait(true);
+
+        var change = await tcs.Task.DefaultTimeout();
+
+        change.Should().ContainSingle();
+
+        await cts.CancelAsync().DefaultTimeout();
+
+        try
+        {
+            await task.DefaultTimeout().ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            // swallow
+        }
+
+    }
+
     private static ResourceSnapshot CreateResourceSnapshot(string resourceName)
     {
         return new FakeResourceSnapshot
