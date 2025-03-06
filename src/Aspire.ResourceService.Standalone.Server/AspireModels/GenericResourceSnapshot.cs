@@ -1,8 +1,7 @@
-/*
-
 // Copied from and inspired by .NET Aspire's ResourceSnapshot.cs
 // https://github.com/dotnet/aspire/blob/main/src/Aspire.Hosting/Dashboard/GenericResourceSnapshot.cs
 
+using Aspire.Hosting.ApplicationModel;
 using Google.Protobuf.WellKnownTypes;
 
 namespace Aspire.Hosting.Dashboard;
@@ -21,5 +20,3 @@ internal sealed class GenericResourceSnapshot(CustomResourceSnapshot state) : Re
         }
     }
 }
-
-*/
