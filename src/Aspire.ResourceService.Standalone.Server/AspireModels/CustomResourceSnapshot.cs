@@ -1,11 +1,6 @@
-/*
-
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
 using System.Collections.Immutable;
 using System.Diagnostics;
-using HealthStatus = Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Aspire.Hosting.ApplicationModel;
 
@@ -158,11 +153,18 @@ public sealed record ResourceStateSnapshot(string Text, string? Style)
     /// Convert text to state snapshot. The style will be null by default
     /// </summary>
     /// <param name="s"></param>
-    public static implicit operator ResourceStateSnapshot?(string? s)
-    {
-        return s is null ? null : new(Text: s, Style: null);
-    }
+    public static implicit operator ResourceStateSnapshot?(string? s) =>
+        s is null ? null : new(Text: s, Style: null);
 }
+
+/// <summary>
+/// A snapshot of an environment variable.
+/// </summary>
+/// <param name="Name">The name of the environment variable.</param>
+/// <param name="Value">The value of the environment variable.</param>
+/// <param name="IsFromSpec">Determines if this environment variable was defined in the resource explicitly or computed (for e.g. inherited from the process hierarchy).</param>
+[DebuggerDisplay("{Value}", Name = "{Name}")]
+public sealed record EnvironmentVariableSnapshot(string Name, string? Value, bool IsFromSpec);
 
 /// <summary>
 /// A snapshot of the url.
@@ -171,7 +173,24 @@ public sealed record ResourceStateSnapshot(string Text, string? Style)
 /// <param name="Url">The full uri.</param>
 /// <param name="IsInternal">Determines if this url is internal.</param>
 [DebuggerDisplay("{Url}", Name = "{Name}")]
-public sealed record UrlSnapshot(string Name, string Url, bool IsInternal);
+public sealed record UrlSnapshot(string Name, string Url, bool IsInternal)
+{
+    /// <summary>
+    /// Whether this URL is inactive or not.
+    /// </summary>
+    /// <remarks>
+    /// Inactive URLs are not displayed in UI.
+    /// </remarks>
+    public bool IsInactive { get; init; }
+
+    internal void Deconstruct(out string name, out string url, out bool isInternal, out bool isInactive)
+    {
+        name = Name;
+        url = Url;
+        isInternal = IsInternal;
+        isInactive = IsInactive;
+    }
+}
 
 /// <summary>
 /// A snapshot of a volume, mounted to a container.
@@ -354,24 +373,17 @@ public static class KnownResourceStates
     public static readonly IReadOnlyList<string> TerminalStates = [Finished, FailedToStart, Exited];
 }
 
-internal static class ResourceSnapshotBuilder
+/// <summary>
+/// The icon variant.
+/// </summary>
+public enum IconVariant
 {
-    public static ImmutableArray<RelationshipSnapshot> BuildRelationships(IResource resource)
-    {
-        var relationships = ImmutableArray.CreateBuilder<RelationshipSnapshot>();
-
-        if (resource is IResourceWithParent resourceWithParent)
-        {
-            relationships.Add(new(resourceWithParent.Parent.Name, KnownRelationshipTypes.Parent));
-        }
-
-        foreach (var annotation in resource.Annotations.OfType<ResourceRelationshipAnnotation>())
-        {
-            relationships.Add(new(annotation.Resource.Name, annotation.Type));
-        }
-
-        return relationships.ToImmutable();
-    }
+    /// <summary>
+    /// Regular variant of icons.
+    /// </summary>
+    Regular,
+    /// <summary>
+    /// Filled variant of icons.
+    /// </summary>
+    Filled
 }
-
-*/

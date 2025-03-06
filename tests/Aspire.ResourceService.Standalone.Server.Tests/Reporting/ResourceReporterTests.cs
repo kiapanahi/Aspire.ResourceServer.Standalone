@@ -133,7 +133,14 @@ public sealed class ResourceReporterTests
             ExitCode = 0,
             CreationTimeStamp = DateTime.UtcNow,
             StartTimeStamp = DateTime.UtcNow,
-            StopTimeStamp = null
+            StopTimeStamp = null,
+            Commands = [],
+            Environment = [],
+            HealthReports = [],
+            Relationships = [],
+            Urls = [],
+            Volumes = []
+
         };
     }
 
