@@ -4,7 +4,7 @@ using Aspire.Hosting.Dashboard;
 
 namespace Aspire.ResourceService.Standalone.Server.Reporting;
 
-internal sealed class ResourceReporter : IDisposable
+internal sealed class ResourceReporter : IResourceReporter
 {
     private readonly object _syncLock = new();
 
@@ -31,7 +31,7 @@ internal sealed class ResourceReporter : IDisposable
         _cts.Dispose();
     }
 
-    internal ResourceSnapshotSubscription SubscribeResources()
+    public ResourceSnapshotSubscription SubscribeResources()
     {
         _logger.LogSubscribingToResourceSnapshots();
         return new ResourceSnapshotSubscription(
@@ -49,7 +49,7 @@ internal sealed class ResourceReporter : IDisposable
         }
     }
 
-    internal async ValueTask UpdateAsync(ResourceSnapshot snapshot, ResourceSnapshotChangeType changeType)
+    public async ValueTask UpdateAsync(ResourceSnapshot snapshot, ResourceSnapshotChangeType changeType)
     {
         _logger.LogReceivedResourceUpdate(snapshot.Name, changeType);
         lock (_syncLock)
