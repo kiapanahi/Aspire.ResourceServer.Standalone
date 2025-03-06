@@ -15,10 +15,11 @@ public sealed class ServiceCollectionExtensionsTests
         // Act
         services.AddResourceReporter();
         var serviceProvider = services.BuildServiceProvider();
-        var reporter = serviceProvider.GetRequiredService<ResourceReporter>();
+        var reporter = serviceProvider.GetRequiredService<IResourceReporter>();
 
         // Assert
         reporter.Should().NotBeNull();
+        reporter.Should().BeOfType<ResourceReporter>();
     }
 
     [Fact]
@@ -30,8 +31,8 @@ public sealed class ServiceCollectionExtensionsTests
         var serviceProvider = services.BuildServiceProvider();
 
         // Act
-        var firstInstance = serviceProvider.GetService<ResourceReporter>();
-        var secondInstance = serviceProvider.GetService<ResourceReporter>();
+        var firstInstance = serviceProvider.GetService<IResourceReporter>();
+        var secondInstance = serviceProvider.GetService<IResourceReporter>();
 
         // Assert
         firstInstance.Should().BeSameAs(secondInstance);
