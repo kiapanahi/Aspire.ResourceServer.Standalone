@@ -5,7 +5,7 @@ internal static class ServiceCollectionExtensions
     public static IServiceCollection AddResourceReporter(this IServiceCollection services)
     {
 
-        services.AddSingleton<ResourceReporter>();
+        services.AddSingleton<IResourceReporter, ResourceReporter>();
 
         return services;
     }
