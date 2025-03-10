@@ -22,17 +22,6 @@ services:
       - mongo_data:/data/db
     networks:
       - dev_network
-  aspire_dashboard:
-    image: mcr.microsoft.com/dotnet/aspire-dashboard:8.2
-    environment:
-      DASHBOARD__FRONTEND__AUTHMODE: "Unsecured"
-      DASHBOARD__RESOURCESERVICECLIENT__URL: "http://host.docker.internal:7007"
-      DASHBOARD__RESOURCESERVICECLIENT__AUTHMODE: "Unsecured"
-    ports:
-      - "18888:18888"
-      - "4317:18889"
-    networks:
-      - dev_network
 networks:
   dev_network:
     driver: bridge
