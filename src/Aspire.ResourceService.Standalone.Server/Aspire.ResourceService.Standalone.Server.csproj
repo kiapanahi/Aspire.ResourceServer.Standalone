@@ -22,8 +22,4 @@
     <ProjectReference Include="..\Aspire.ResourceService.Standalone.ServiceDefaults\Aspire.ResourceService.Standalone.ServiceDefaults.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="ResourceProviders\K8s\" />
-  </ItemGroup>
-
 </Project>

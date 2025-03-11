@@ -1,81 +1,94 @@
 using Aspire.ResourceService.Proto.V1;
-using Aspire.ResourceService.Standalone.Server.Diagnostics;
-using Aspire.ResourceService.Standalone.Server.ResourceProviders;
+using Aspire.ResourceService.Standalone.Server.Reporting;
 using Grpc.Core;
+
+using DashboardGrpcService = Aspire.ResourceService.Proto.V1.DashboardService.DashboardServiceBase;
 
 namespace Aspire.ResourceService.Standalone.Server.Services;
 
-internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServiceBase
+internal sealed class DashboardService : DashboardGrpcService
 {
+    private readonly DashboardData _dashboardData;
     private readonly IHostApplicationLifetime _hostApplicationLifetime;
     private readonly ILogger<DashboardService> _logger;
-    private readonly IResourceProvider _resourceProvider;
-    private readonly IServiceInformationProvider _serviceInformationProvider;
 
-    public DashboardService(IServiceInformationProvider serviceInformationProvider,
-        IResourceProvider resourceProvider,
-        IHostApplicationLifetime hostApplicationLifetime,
-        ILogger<DashboardService> logger)
+    public DashboardService(DashboardData dashboardData, IHostApplicationLifetime hostApplicationLifetime, ILogger<DashboardService> logger)
     {
-        _serviceInformationProvider = serviceInformationProvider;
-        _resourceProvider = resourceProvider;
+        _dashboardData = dashboardData;
         _hostApplicationLifetime = hostApplicationLifetime;
         _logger = logger;
     }
 
-    public override Task<ApplicationInformationResponse> GetApplicationInformation(
-        ApplicationInformationRequest request, ServerCallContext context)
+    public override async Task<ApplicationInformationResponse> GetApplicationInformation(ApplicationInformationRequest request, ServerCallContext context)
     {
         _logger.ReturningApplicationInformation();
-
-        return Task.FromResult(new ApplicationInformationResponse
-        {
-            ApplicationName = _serviceInformationProvider.GetServiceInformation().Name
-        });
+        var serviceInformation = await _dashboardData.GetResourceServerServiceInformation().ConfigureAwait(false);
+        return new ApplicationInformationResponse { ApplicationName = serviceInformation.Name };
     }
 
     public override async Task WatchResources(WatchResourcesRequest request, IServerStreamWriter<WatchResourcesUpdate> responseStream, ServerCallContext context)
     {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostApplicationLifetime.ApplicationStopping,
-            context.CancellationToken);
+        await ExecuteAsync(WatchResourcesInternal, context).ConfigureAwait(false);
 
-        try
+        async Task WatchResourcesInternal(CancellationToken cancellationToken)
         {
-            _logger.GettingResourcesFromResourceProvider();
-            var (initialData, updates) = await _resourceProvider
-                .GetResources(cts.Token)
-                .ConfigureAwait(false);
-
-            _logger.GotResourcesFromResourceProvider(initialData.Count);
+            var (initialData, updates) = _dashboardData.SubscribeResources();
 
             _logger.LogCompilingInitialResources();
             var data = new InitialResourceData();
-            data.Resources.Add(initialData);
+            foreach (var snapshot in initialData)
+            {
+                data.Resources.Add(Resource.FromSnapshot(snapshot));
+            }
             _logger.LogInitialResourcesCompiled();
 
             _logger.WritingInitialResourcesToStream();
-            await responseStream
-                .WriteAsync(new WatchResourcesUpdate { InitialData = data }, CancellationToken.None)
-                .ConfigureAwait(false);
+            await responseStream.WriteAsync(new WatchResourcesUpdate { InitialData = data }, cancellationToken).ConfigureAwait(false);
             _logger.InitialResourcesWroteToStreamSuccessfully();
 
-            await foreach (var resourceUpdate in updates.WithCancellation(cts.Token).ConfigureAwait(false))
+            await foreach (var batch in updates.WithCancellation(cancellationToken).ConfigureAwait(false))
             {
-                // Skip empty updates.
-                if (resourceUpdate is null)
+                var changes = new WatchResourcesChanges();
+
+                foreach (var update in batch)
                 {
-                    continue;
+                    var change = new WatchResourcesChange();
+
+                    if (update.ChangeType is ResourceSnapshotChangeType.Upsert)
+                    {
+                        change.Upsert = Resource.FromSnapshot(update.Resource);
+                    }
+                    else if (update.ChangeType is ResourceSnapshotChangeType.Delete)
+                    {
+                        change.Delete = new() { ResourceName = update.Resource.Name, ResourceType = update.Resource.ResourceType };
+                    }
+                    else
+                    {
+                        throw new FormatException($"Unexpected {nameof(ResourceSnapshotChange)} type: {update.ChangeType}");
+                    }
+
+                    _logger.LogGotResourceUpdate(change);
+                    changes.Value.Add(change);
                 }
 
-                _logger.LogGotResourceUpdate(resourceUpdate);
-
-                EnsureResourceUpdateNotEmpty(resourceUpdate);
-
-                var changes = new WatchResourcesChanges { Value = { resourceUpdate } };
-
-                await responseStream.WriteAsync(new WatchResourcesUpdate { Changes = changes }, CancellationToken.None)
-                    .ConfigureAwait(false);
+                await responseStream.WriteAsync(new() { Changes = changes }, cancellationToken).ConfigureAwait(false);
             }
+        }
+    }
+
+    public override Task WatchResourceConsoleLogs(WatchResourceConsoleLogsRequest request, IServerStreamWriter<WatchResourceConsoleLogsUpdate> responseStream, ServerCallContext context)
+    {
+        _logger.StartedWatchingResourceConsoleLogs(request.ResourceName);
+        return Task.CompletedTask;
+    }
+
+    private async Task ExecuteAsync(Func<CancellationToken, Task> execute, ServerCallContext serverCallContext)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostApplicationLifetime.ApplicationStopping, serverCallContext.CancellationToken);
+
+        try
+        {
+            await execute(cts.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cts.Token.IsCancellationRequested)
         {
@@ -87,104 +100,8 @@ internal sealed class DashboardService : Proto.V1.DashboardService.DashboardServ
         }
         catch (Exception ex)
         {
-            _logger.LogErrorWatchingResources(context.Method, ex);
+            _logger.LogErrorWatchingResources(serverCallContext.Method, ex);
             throw;
         }
-
-        static void EnsureResourceUpdateNotEmpty(WatchResourcesChange resourceUpdate)
-        {
-            if (resourceUpdate.Delete is null && resourceUpdate.Upsert is null)
-            {
-                throw new InvalidOperationException("Resource update is empty.");
-            }
-        }
     }
-
-    public override async Task WatchResourceConsoleLogs(WatchResourceConsoleLogsRequest request, IServerStreamWriter<WatchResourceConsoleLogsUpdate> responseStream, ServerCallContext context)
-    {
-        _logger.StartedWatchingResourceConsoleLogs(request.ResourceName);
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostApplicationLifetime.ApplicationStopping,
-            context.CancellationToken);
-
-        var lineNumber = 0;
-        try
-        {
-            _logger.AwaitingLogStream(request.ResourceName);
-            await foreach (var log in _resourceProvider.GetResourceLogs(request.ResourceName, cts.Token)
-                               .ConfigureAwait(false))
-            {
-                _logger.GotLogEntry(log);
-                var update = new WatchResourceConsoleLogsUpdate();
-                update.LogLines.Add(new ConsoleLogLine { Text = log.Text, IsStdErr = false, LineNumber = ++lineNumber });
-
-                _logger.WritingLogToOutputStream(update);
-                await responseStream.WriteAsync(update, CancellationToken.None).ConfigureAwait(false);
-            }
-        }
-        catch (OperationCanceledException) when (cts.Token.IsCancellationRequested)
-        {
-            // Ignore cancellation and just return.
-        }
-        catch (IOException) when (cts.Token.IsCancellationRequested)
-        {
-            // Ignore cancellation and just return. Cancelled writes throw IOException.
-        }
-    }
-}
-
-internal static partial class WatchResourcesLogs
-{
-    [LoggerMessage(LogLevel.Trace, "Returning application information")]
-    public static partial void ReturningApplicationInformation(this ILogger logger);
-
-    [LoggerMessage(Events.PreparingToGetResources, LogLevel.Trace, "Preparing to get resources from the resource provider")]
-    public static partial void GettingResourcesFromResourceProvider(this ILogger logger);
-
-    [LoggerMessage(Events.ResourcesReceived, LogLevel.Trace, "Received {Count} resources from resource provider")]
-    public static partial void GotResourcesFromResourceProvider(this ILogger logger, int count);
-
-    [LoggerMessage(Events.CompilingInitialResources, LogLevel.Trace, "Preparing to compile initial resources")]
-    public static partial void LogCompilingInitialResources(this ILogger logger);
-
-    [LoggerMessage(Events.InitialResourcesCompiled, LogLevel.Trace, "Initial resources compiled")]
-    public static partial void LogInitialResourcesCompiled(this ILogger logger);
-
-    [LoggerMessage(Events.SendingInitialResources, LogLevel.Trace, "Preparing to send initial resources")]
-    public static partial void WritingInitialResourcesToStream(this ILogger logger);
-
-    [LoggerMessage(Events.InitialResourcesSent, LogLevel.Trace, "Initial resources sent")]
-    public static partial void InitialResourcesWroteToStreamSuccessfully(this ILogger logger);
-
-    [LoggerMessage(Events.ErrorWatchingResources, LogLevel.Error, "Error executing service method {Method}")]
-    public static partial void LogErrorWatchingResources(this ILogger logger, string method, Exception ex);
-
-    [LoggerMessage(Events.ResourceUpdateReceived, LogLevel.Debug, "Got resource update: {Update}")]
-    public static partial void LogGotResourceUpdate(this ILogger logger, WatchResourcesChange update);
-
-    private struct Events
-    {
-        internal const int PreparingToGetResources = 101;
-        internal const int ResourcesReceived = 102;
-        internal const int CompilingInitialResources = 103;
-        internal const int InitialResourcesCompiled = 104;
-        internal const int SendingInitialResources = 105;
-        internal const int InitialResourcesSent = 106;
-        internal const int ResourceUpdateReceived = 107;
-        internal const int ErrorWatchingResources = 501;
-    }
-}
-
-internal static partial class WatchResourceConsoleLogsLogs
-{
-    [LoggerMessage(LogLevel.Trace, "Started watching console logs for resource: {Resource}")]
-    public static partial void StartedWatchingResourceConsoleLogs(this ILogger<DashboardService> logger, string resource);
-
-    [LoggerMessage(LogLevel.Trace, "Awaiting log stream for resource: {Resource}")]
-    public static partial void AwaitingLogStream(this ILogger<DashboardService> logger, string resource);
-
-    [LoggerMessage(LogLevel.Trace, "Got log entry from stream: {Entry}")]
-    public static partial void GotLogEntry(this ILogger<DashboardService> logger, ResourceLogEntry entry);
-
-    [LoggerMessage(LogLevel.Trace, "Writing log item to stream: {Update}")]
-    public static partial void WritingLogToOutputStream(this ILogger<DashboardService> logger, WatchResourceConsoleLogsUpdate update);
 }

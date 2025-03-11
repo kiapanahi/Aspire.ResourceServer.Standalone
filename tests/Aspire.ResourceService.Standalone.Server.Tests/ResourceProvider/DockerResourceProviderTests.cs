@@ -1,4 +1,4 @@
-using Aspire.ResourceService.Standalone.Server.ResourceProviders;
+using Aspire.ResourceService.Standalone.Server.ResourceProviders.Docker;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using FluentAssertions;
@@ -16,8 +16,7 @@ public sealed class DockerResourceProviderTests : IDisposable
     public DockerResourceProviderTests()
     {
         _dockerClientMock = new Mock<IDockerClient>();
-        _dockerResourceProvider = new DockerResourceProvider(_dockerClientMock.Object,
-            NullLogger<DockerResourceProvider>.Instance);
+        _dockerResourceProvider = new DockerResourceProvider(_dockerClientMock.Object, NullLogger<DockerResourceProvider>.Instance);
     }
 
     [Fact]
@@ -84,107 +83,6 @@ public sealed class DockerResourceProviderTests : IDisposable
         _dockerClientMock.Verify(
             c => c.Containers.ListContainersAsync(It.IsAny<ContainersListParameters>(), It.IsAny<CancellationToken>()),
             Times.Exactly(10));
-    }
-
-    [Fact]
-    public async Task GetResourceLogsShouldReturnLogs()
-    {
-        // Arrange
-        var cts = new CancellationTokenSource();
-        cts.CancelAfter(TimeSpan.FromMilliseconds(400));
-
-        var containers = new List<ContainerListResponse> { new() { ID = "1", Names = ["container1"] } };
-
-        _dockerClientMock.Setup(c =>
-                c.Containers.ListContainersAsync(It.IsAny<ContainersListParameters>(), CancellationToken.None))
-            .ReturnsAsync(containers);
-
-        var logs = new List<ResourceLogEntry> { new("container1", "log1"), new("container1", "log2") };
-
-        _dockerClientMock
-            .Setup(c => c.Containers.GetContainerLogsAsync(
-                It.IsAny<string>(),
-                It.IsAny<ContainerLogsParameters>(),
-                cts.Token,
-                It.IsAny<IProgress<string>>()))
-            .Callback<string, ContainerLogsParameters, CancellationToken, IProgress<string>>(
-                (id, parameters, token, progress) =>
-                {
-                    foreach (var log in logs)
-                    {
-                        progress.Report(log.Text);
-                    }
-                })
-            .Returns(Task.CompletedTask);
-
-        // Act
-        var resultLogs = new List<ResourceLogEntry>();
-        try
-        {
-            await foreach (var log in _dockerResourceProvider.GetResourceLogs("container1", cts.Token)
-                               .ConfigureAwait(false))
-            {
-                resultLogs.Add(log);
-            }
-        }
-        catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException)
-        {
-            // cts.Task is cancelled mimicking the end of the log stream.
-            // Swallow
-        }
-
-        // Assert
-        resultLogs.Should().BeEquivalentTo(logs);
-    }
-
-    [Fact]
-    public async Task GetResourceLogsCancelledToken()
-    {
-        // Arrange
-        var cts = new CancellationTokenSource();
-
-        var containers = new List<ContainerListResponse> { new() { ID = "1", Names = ["container1"] } };
-
-        _dockerClientMock.Setup(c => c.Containers.ListContainersAsync(It.IsAny<ContainersListParameters>(), CancellationToken.None))
-            .ReturnsAsync(containers);
-
-        var logs = new List<string> { "log1", "log2" };
-
-        _dockerClientMock
-            .Setup(c => c.Containers.GetContainerLogsAsync(
-                It.IsAny<string>(),
-                It.IsAny<ContainerLogsParameters>(),
-                cts.Token,
-                It.IsAny<IProgress<string>>()))
-            .Callback<string, ContainerLogsParameters, CancellationToken, IProgress<string>>(
-                (id, parameters, token, progress) =>
-                {
-                    foreach (var log in logs)
-                    {
-                        progress.Report(log);
-                    }
-                })
-            .Returns(Task.CompletedTask);
-
-        // Act
-        cts.Cancel(true);
-        var resultLogs = new List<ResourceLogEntry>();
-        try
-        {
-            await foreach (var log in _dockerResourceProvider.GetResourceLogs("container1", cts.Token)
-                               .ConfigureAwait(false))
-            {
-                resultLogs.Add(log);
-            }
-        }
-        catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException)
-        {
-            // cts.Task is cancelled mimicking the end of the log stream.
-            // Swallow
-        }
-
-        // Assert
-        resultLogs.Should().BeEmpty();
     }
 
     public void Dispose()

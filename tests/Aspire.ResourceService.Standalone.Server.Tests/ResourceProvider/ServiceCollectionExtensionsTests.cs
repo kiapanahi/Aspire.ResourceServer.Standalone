@@ -1,4 +1,5 @@
 using Aspire.ResourceService.Standalone.Server.ResourceProviders;
+using Aspire.ResourceService.Standalone.Server.ResourceProviders.Docker;
 using Aspire.ResourceService.Standalone.Server.ResourceProviders.K8s;
 using Docker.DotNet;
 using FluentAssertions;

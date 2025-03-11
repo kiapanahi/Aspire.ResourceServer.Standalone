@@ -1,3 +1,4 @@
+using Aspire.ResourceService.Standalone.Server.ResourceProviders.Docker;
 using Aspire.ResourceService.Standalone.Server.ResourceProviders.K8s;
 using Aspire.ResourceService.Standalone.Server.ResourceProviders.K8s.Models;
 using Docker.DotNet;

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <RootNamespace>$(RootNamespace).Server.Tests</RootNamespace>
-    <NoWarn>$(NoWarn);CA1859</NoWarn>
+    <NoWarn>$(NoWarn);CA1859;CA2007</NoWarn>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
