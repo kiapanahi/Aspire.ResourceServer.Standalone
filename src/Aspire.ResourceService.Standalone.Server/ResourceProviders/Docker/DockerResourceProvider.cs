@@ -44,7 +44,7 @@ internal sealed partial class DockerResourceProvider : IResourceProvider, IDispo
         }
     }
 
-    public async Task<IList<ContainerListResponse>> GetContainers(CancellationToken cancellationToken = default)
+    private async Task<IList<ContainerListResponse>> GetContainers(CancellationToken cancellationToken = default)
     {
         var c = await _dockerClient.Containers
             .ListContainersAsync(new ContainersListParameters() { All = true }, cancellationToken)
@@ -52,7 +52,7 @@ internal sealed partial class DockerResourceProvider : IResourceProvider, IDispo
         return c;
     }
 
-    public async Task<ContainerListResponse> FindContainer(string ContainerId, CancellationToken cancellationToken = default)
+    private async Task<ContainerListResponse> FindContainer(string ContainerId, CancellationToken cancellationToken = default)
     {
         var containers = await GetContainers(cancellationToken).ConfigureAwait(false);
 
