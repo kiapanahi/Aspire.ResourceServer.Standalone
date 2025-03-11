@@ -1,6 +1,8 @@
 #!/bin/bash
 # This script runs the aspire-dashboard Docker container.
 
+docker rm -v -f aspire-dashboard
+
 docker run -d \
   -p 18888:18888 \
   -p 4317:18889 \
