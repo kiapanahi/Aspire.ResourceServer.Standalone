@@ -1,141 +1,35 @@
-using System.Runtime.CompilerServices;
-using System.Threading.Channels;
 using Aspire.ResourceService.Proto.V1;
 using Aspire.ResourceService.Standalone.Server.ResourceProviders.K8s.Models;
 using Google.Protobuf.WellKnownTypes;
 using k8s;
-using k8s.Models;
 using Microsoft.Extensions.Options;
 
 namespace Aspire.ResourceService.Standalone.Server.ResourceProviders.K8s;
 
-internal sealed partial class KubernetesResourceProvider(IKubernetes kubernetes, IOptions<KubernetesResourceProviderConfiguration> configuration, ILogger<KubernetesResourceProvider> logger) : IResourceProvider
+internal sealed class KubernetesResourceProvider : IResourceProvider
 {
-    public async Task<ResourceSubscription> GetResources(CancellationToken cancellationToken)
+    private readonly IKubernetes _kubernetes;
+    private readonly IOptions<KubernetesResourceProviderConfiguration> _configuration;
+    private readonly ILogger<KubernetesResourceProvider> _logger;
+
+    public KubernetesResourceProvider(IKubernetes kubernetes,
+        IOptions<KubernetesResourceProviderConfiguration> configuration,
+        ILogger<KubernetesResourceProvider> logger)
+    {
+        _kubernetes = kubernetes;
+        _configuration = configuration;
+        _logger = logger;
+    }
+
+    public async ValueTask GetResources(CancellationToken cancellationToken)
     {
         var containers = await GetKubernetesContainers().ConfigureAwait(false);
         var resources = containers.Select(Resource.FromK8sContainer).ToList().AsReadOnly();
-
-        return new ResourceSubscription(resources, UpdateStream(cancellationToken));
-
-        async IAsyncEnumerable<WatchResourcesChange?> UpdateStream(
-            [EnumeratorCancellation] CancellationToken cancellation)
-        {
-            var channel = Channel.CreateUnbounded<K8sMessage>();
-
-            async Task WatchEvents(CancellationToken cancellationToken)
-            {
-                var watch = await kubernetes.CoreV1.ListNamespacedPodWithHttpMessagesAsync(
-                    configuration.Value.Namespace,
-                    cancellationToken: cancellationToken,
-                    watch: true)
-                    .ConfigureAwait(false);
-
-                watch.Watch<V1Pod, V1PodList>((type, item) =>
-                {
-                    if (item.Status?.ContainerStatuses != null)
-                    {
-                        foreach (var container in item.Status.ContainerStatuses)
-                        {
-                            string containerState = container.State?.Running != null ? "Running"
-                                                    : container.State?.Terminated != null ? "Terminated"
-                                                    : container.State?.Waiting != null ? "Waiting"
-                                                    : "";
-
-                            var message = new K8sMessage
-                            {
-                                ContainerState = containerState,
-                                ContainerId = container.ContainerID,
-                                PodName = item.Metadata.Name,
-                                Type = type.ToString()
-                            };
-
-                            channel.Writer.TryWrite(message);
-                        }
-                    }
-
-                });
-            }
-
-            _ = Task.Run(() => WatchEvents(cancellationToken), cancellationToken).ConfigureAwait(false);
-
-            await foreach (var msg in channel.Reader.ReadAllAsync(cancellation).ConfigureAwait(false))
-            {
-                logger.CapturedKubernetesChange(System.Text.Json.JsonSerializer.Serialize(msg));
-
-                yield return await GetChangeForStartedContainer(msg.ContainerId).ConfigureAwait(false);
-            }
-        }
-    }
-
-    public async IAsyncEnumerable<ResourceLogEntry> GetResourceLogs(string resourceName, [EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        var pods = await kubernetes.CoreV1.ListNamespacedPodAsync(
-                    namespaceParameter: configuration.Value.Namespace,
-                    cancellationToken: cancellationToken
-                    )
-                    .ConfigureAwait(false);
-
-        string podName = pods.Items.Where(p => p.Metadata.Labels["app"] == resourceName &&
-                p.Status.Phase == "Running" &&
-                p.Status.Conditions.Any(c => c.Type == "Ready" && c.Status == "True")).FirstOrDefault()?.Metadata.Name ?? "";
-
-        if (string.IsNullOrWhiteSpace(podName))
-        {
-            throw new InvalidOperationException("Could not get name of pod");
-        }
-
-        var logStream = await kubernetes.CoreV1.ReadNamespacedPodLogAsync(
-                    name: podName,
-                    namespaceParameter: configuration.Value.Namespace,
-                    container: resourceName,
-                    cancellationToken: cancellationToken,
-                    follow: true
-                ).ConfigureAwait(false);
-
-        using var reader = new StreamReader(logStream);
-
-        cancellationToken.Register(reader.Close);
-
-        while (!reader.EndOfStream)
-        {
-            string? logline;
-            try
-            {
-                logline = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-            }
-            catch (IOException)
-            {
-                yield break;
-            }
-
-            if (logline is not null)
-            {
-                yield return new ResourceLogEntry(resourceName, logline);
-            }
-        }
-    }
-
-    private async Task<WatchResourcesChange?> GetChangeForStartedContainer(string containerId)
-    {
-        try
-        {
-            var containers = await GetKubernetesContainers().ConfigureAwait(false);
-            var container =
-                containers.Single(c => string.Equals(c.ContainerID, containerId, StringComparison.OrdinalIgnoreCase));
-            var resource = Resource.FromK8sContainer(container);
-
-            return new() { Upsert = resource };
-        }
-        catch (Exception)
-        {
-            return null;
-        }
     }
 
     public async ValueTask<List<KubernetesContainer>> GetKubernetesContainers()
     {
-        string[] srvNames = configuration.Value.Servicenames?.Split(';') ?? throw new InvalidOperationException();
+        string[] srvNames = _configuration.Value.Servicenames?.Split(';') ?? throw new InvalidOperationException();
 
         var containers = new List<KubernetesContainer>();
 
@@ -144,7 +38,7 @@ internal sealed partial class KubernetesResourceProvider(IKubernetes kubernetes,
             throw new InvalidOperationException("No service names provided!");
         }
 
-        var pods = await kubernetes.CoreV1.ListNamespacedPodAsync(namespaceParameter: configuration.Value.Namespace)
+        var pods = await _kubernetes.CoreV1.ListNamespacedPodAsync(namespaceParameter: _configuration.Value.Namespace)
             .ConfigureAwait(false);
 
         if (pods.Items.Count == 0)
@@ -225,33 +119,9 @@ internal sealed partial class KubernetesResourceProvider(IKubernetes kubernetes,
         }
         return containers;
     }
-}
 
-internal static partial class KubernetesResourceProviderLogs
-{
-    [LoggerMessage(LogLevel.Debug, "Captured change: {Change}")]
-    public static partial void CapturedKubernetesChange(this ILogger<KubernetesResourceProvider> logger, string change);
-}
-
-internal sealed partial class KubernetesResourceProvider : IDisposable
-{
-    private bool _disposedValue;
     public void Dispose()
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    private void Dispose(bool disposing)
-    {
-        if (!_disposedValue)
-        {
-            if (disposing)
-            {
-                kubernetes?.Dispose();
-            }
-
-            _disposedValue = true;
-        }
+        _kubernetes?.Dispose();
     }
 }

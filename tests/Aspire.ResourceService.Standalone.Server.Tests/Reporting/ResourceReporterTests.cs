@@ -3,7 +3,6 @@ using Aspire.ResourceService.Standalone.Server.Reporting;
 using Aspire.ResourceService.Standalone.Server.Tests.Helpers;
 using FluentAssertions;
 using Google.Protobuf.WellKnownTypes;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Aspire.ResourceService.Standalone.Server.Tests.Reporting;
 
@@ -21,35 +20,10 @@ internal sealed class FakeResourceSnapshot : ResourceSnapshot
 public sealed class ResourceReporterTests
 {
     [Fact]
-    public void DisposableReporter()
-    {
-        var cts = new CancellationTokenSource();
-        var reporter = new ResourceReporter(NullLogger<ResourceReporter>.Instance, cts.Token);
-        using (reporter)
-        {
-        }
-        Action disposed = reporter.Dispose;
-        disposed.Should().Throw<ObjectDisposedException>();
-    }
-
-    [Fact]
-    public void DisposableReporterWithCancelledToken()
-    {
-        var cts = new CancellationTokenSource();
-        cts.Cancel();
-        var reporter = new ResourceReporter(NullLogger<ResourceReporter>.Instance, cts.Token);
-        using (reporter)
-        {
-        }
-        Action disposed = reporter.Dispose;
-        disposed.Should().Throw<ObjectDisposedException>();
-    }
-
-    [Fact]
     public async Task EmptyInitialStateWhenReporterIsCold()
     {
         var cts = new CancellationTokenSource();
-        var reporter = new ResourceReporter(NullLogger<ResourceReporter>.Instance, cts.Token);
+        var reporter = new ResourceReporter(cts.Token);
         var subscription = reporter.SubscribeResources();
 
         subscription.InitialState.Should().BeEmpty();
@@ -60,7 +34,7 @@ public sealed class ResourceReporterTests
     public async Task ExpectedInitialResourcesWhenSubscribing()
     {
         var cts = new CancellationTokenSource();
-        var reporter = new ResourceReporter(NullLogger<ResourceReporter>.Instance, cts.Token);
+        var reporter = new ResourceReporter(cts.Token);
 
         var a = CreateResourceSnapshot("A");
         var b = CreateResourceSnapshot("B");
@@ -87,7 +61,7 @@ public sealed class ResourceReporterTests
     public async Task UpdatesAreStreamed()
     {
         var cts = new CancellationTokenSource();
-        var reporter = new ResourceReporter(NullLogger<ResourceReporter>.Instance, cts.Token);
+        var reporter = new ResourceReporter(cts.Token);
 
         var (_, subscription) = reporter.SubscribeResources();
 
