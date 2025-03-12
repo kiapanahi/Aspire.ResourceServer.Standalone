@@ -1,4 +1,5 @@
 using Aspire.ResourceService.Standalone.Server.Diagnostics;
+using Aspire.ResourceService.Standalone.Server.Reporting;
 using Aspire.ResourceService.Standalone.Server.ResourceProviders;
 using Aspire.ResourceService.Standalone.Server.Services;
 
@@ -9,6 +10,7 @@ builder.AddServiceDefaults();
 builder.Services
     .AddServiceInformationProvider()
     .AddResourceProvider(builder.Configuration)
+    .AddResourceNotificationService()
     .AddDashboardData();
 
 builder.Services.AddGrpc();
