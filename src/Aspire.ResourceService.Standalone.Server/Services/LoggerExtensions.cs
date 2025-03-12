@@ -5,26 +5,26 @@ namespace Aspire.ResourceService.Standalone.Server.Services;
 internal static partial class WatchResourcesLogs
 {
     [LoggerMessage(LogLevel.Trace, "Returning application information")]
-    public static partial void ReturningApplicationInformation(this ILogger logger);
+    public static partial void ReturningApplicationInformation(this ILogger<DashboardService> logger);
 
     [LoggerMessage(LogLevel.Trace, "Preparing to compile initial resources")]
-    public static partial void LogCompilingInitialResources(this ILogger logger);
+    public static partial void LogCompilingInitialResources(this ILogger<DashboardService> logger);
 
     [LoggerMessage(LogLevel.Trace, "Initial resources compiled")]
-    public static partial void LogInitialResourcesCompiled(this ILogger logger);
+    public static partial void LogInitialResourcesCompiled(this ILogger<DashboardService> logger);
 
     [LoggerMessage(LogLevel.Trace, "Preparing to send initial resources")]
-    public static partial void WritingInitialResourcesToStream(this ILogger logger);
+    public static partial void WritingInitialResourcesToStream(this ILogger<DashboardService> logger);
 
     [LoggerMessage(LogLevel.Trace, "Initial resources sent")]
-    public static partial void InitialResourcesWroteToStreamSuccessfully(this ILogger logger);
+    public static partial void InitialResourcesWroteToStreamSuccessfully(this ILogger<DashboardService> logger);
 
     [LoggerMessage(LogLevel.Error, "Error executing service method {Method}")]
 
-    public static partial void LogErrorWatchingResources(this ILogger logger, string method, Exception ex);
+    public static partial void LogErrorWatchingResources(this ILogger<DashboardService> logger, string method, Exception ex);
 
     [LoggerMessage(LogLevel.Debug, "Got resource update: {Update}")]
-    public static partial void LogGotResourceUpdate(this ILogger logger, WatchResourcesChange update);
+    public static partial void LogGotResourceUpdate(this ILogger<DashboardService> logger, WatchResourcesChange update);
 
     [LoggerMessage(LogLevel.Trace, "Started watching console logs for resource: {Resource}")]
     public static partial void StartedWatchingResourceConsoleLogs(this ILogger<DashboardService> logger, string resource);
