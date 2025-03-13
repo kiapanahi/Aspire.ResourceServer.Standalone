@@ -1,7 +1,7 @@
 using Aspire.Dashboard.Model;
+using Aspire.ResourceService.Standalone.Server.ResourceProviders.K8s.Models;
 using Docker.DotNet.Models;
 using Google.Protobuf.WellKnownTypes;
-using Aspire.ResourceService.Standalone.Server.ResourceProviders.K8s.Models;
 
 // ReSharper disable CheckNamespace
 

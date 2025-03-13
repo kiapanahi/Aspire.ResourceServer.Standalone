@@ -1,6 +1,6 @@
+using Aspire.ResourceService.Standalone.Server.Tests.ResourceProvider.K8s.Deployment;
 using k8s;
 using Testcontainers.K3s;
-using Aspire.ResourceService.Standalone.Server.Tests.ResourceProvider.K8s.Deployment;
 using static Aspire.ResourceService.Standalone.Server.Tests.TestConfigurationBuilder.TestConfigurationBuilder;
 
 namespace Aspire.ResourceService.Standalone.Server.Tests.ResourceProvider.K8s;
