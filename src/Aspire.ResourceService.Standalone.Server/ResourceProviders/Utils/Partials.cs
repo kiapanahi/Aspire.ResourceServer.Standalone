@@ -25,8 +25,13 @@ public sealed partial class Resource
             .Select(s => new Url
             {
                 IsInternal = false,
-                Name = $"http://{s.IP}:{s.PublicPort}",
-                FullUrl = $"http://{s.IP}:{s.PublicPort}"
+                EndpointName = $"http://{s.IP}:{s.PublicPort}",
+                FullUrl = $"http://{s.IP}:{s.PublicPort}",
+                DisplayProperties = new()
+                {
+                    SortOrder = 0,
+                    DisplayName = ""
+                }
             }));
         return resource;
     }
@@ -44,8 +49,13 @@ public sealed partial class Resource
         resource.Urls.Add(new Url()
         {
             IsInternal = false,
-            Name = $"http://{container.Name}:{container.Port}",
-            FullUrl = $"http://{container.Name}:{container.Port}"
+            EndpointName = $"http://{container.Name}:{container.Port}",
+            FullUrl = $"http://{container.Name}:{container.Port}",
+            DisplayProperties = new()
+            {
+                SortOrder = 0,
+                DisplayName = ""
+            }
         });
         return resource;
     }
