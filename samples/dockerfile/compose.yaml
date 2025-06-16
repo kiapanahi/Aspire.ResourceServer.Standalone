@@ -23,14 +23,24 @@ services:
     networks:
       - dev_network
   aspire_dashboard:
-    image: mcr.microsoft.com/dotnet/aspire-dashboard:8.2
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.3
     environment:
       DASHBOARD__FRONTEND__AUTHMODE: "Unsecured"
-      DASHBOARD__RESOURCESERVICECLIENT__URL: "http://host.docker.internal:7007"
+      DASHBOARD__RESOURCESERVICECLIENT__URL: "http://resource-server:80"
       DASHBOARD__RESOURCESERVICECLIENT__AUTHMODE: "Unsecured"
     ports:
       - "18888:18888"
       - "4317:18889"
+    networks:
+      - dev_network
+  resource-server:
+    image: aspire-resource-server:latest
+    environment:
+      ResourceProvider: "Docker"
+    ports:
+      - "8043:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - dev_network
 networks:

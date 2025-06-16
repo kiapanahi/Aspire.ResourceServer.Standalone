@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - dev_network
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - dev_network
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - dev_network
+  aspire_dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.3
+    environment:
+      DASHBOARD__FRONTEND__AUTHMODE: "Unsecured"
+      DASHBOARD__RESOURCESERVICECLIENT__URL: "http://host.docker.internal:7007"
+      DASHBOARD__RESOURCESERVICECLIENT__AUTHMODE: "Unsecured"
+    ports:
+      - "18888:18888"
+      - "4317:18889"
+    networks:
+      - dev_network
+networks:
+  dev_network:
+    driver: bridge
+volumes:
+  mysql_data:
+  mongo_data:

@@ -1,3 +1,3 @@
 #! /bin/bash
 
-docker compose -p asars-resources-sample -f compose/compose.yaml up -d
+docker compose -p asars-resources-sample -f samples/compose/compose.yaml up -d
