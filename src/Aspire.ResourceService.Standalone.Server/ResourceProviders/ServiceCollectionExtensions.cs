@@ -7,17 +7,21 @@ namespace Aspire.ResourceService.Standalone.Server.ResourceProviders;
 
 internal static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddResourceProvider(this IServiceCollection services, IConfiguration configuration) =>
-        Enum.TryParse<ResourceProviderType>(configuration["ResourceProvider"], ignoreCase: true, out var provider) switch
+    public static IServiceCollection AddResourceProvider(this IServiceCollection services, IConfiguration configuration)
+    {
+
+        if (configuration["ResourceProvider"] == "docker")
         {
-            true => provider switch
-            {
-                ResourceProviderType.Docker => services.AddDockerResourceProvider(),
-                ResourceProviderType.K8s => services.AddKubernetesResourceProvider(configuration),
-                _ => services
-            },
-            false => services
-        };
+            services.AddDockerResourceProvider();
+        }
+
+        if (configuration["ResourceProvider"] == "k8s")
+        {
+            services.AddKubernetesResourceProvider(configuration);
+        }
+
+        return services;
+    }
 
     public static IServiceCollection AddDockerResourceProvider(this IServiceCollection services)
     {
