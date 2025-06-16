@@ -17,7 +17,7 @@ To test the resource server, there's a sample docker compose file in the `compos
 manually by
 
 ```bash
-docker compose -f compose/compose.yaml up -d
+docker compose -f samples/compose/compose.yaml up -d
 ```
 
 Or use the facilitator scripts (`start-compose.ps1`, `start-compose.sh`).
@@ -29,6 +29,26 @@ This compose file includes:
 - A MongoDB container (as a sample of any NoSQL database)
 
 To cover most of the external workloads that teams who do not or cannot use the Aspire application model due to different stack or any other reason usually use.
+
+## Test environment (manual) using Docker, running Aspire.ResourceService as a Docker container
+
+To test the resource server running as a Docker container, there's a sample docker compose file in the `samples/dockerfile` directory. Either build the Aspire.ResourceService image, and start the compose file
+manually by
+
+1. Run (`docker-build.ps1`, or `docker-build.sh`) to build the Aspire.ResourceService image
+2. Start the compose file:
+```bash
+docker compose -f samples/dockerfile/compose.yaml up -d
+```
+
+Or use the facilitator scripts (`start-dockerfile.ps1`, `start-dockerfile.sh`), which both builds the Aspire.ResourceService image and starts the compose file.
+
+This compose file includes:
+- An Aspire dashboard container
+- An Aspire ResourceService container
+- A RabbitMQ container (as a sample of any message bus)
+- A Redis container (as a sample of any key-value store)
+- A MongoDB container (as a sample of any NoSQL database)
 
 ## Test environment (manual) using Minikube
 
