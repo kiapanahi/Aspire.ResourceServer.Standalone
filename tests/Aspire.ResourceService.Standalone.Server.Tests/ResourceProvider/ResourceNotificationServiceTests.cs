@@ -1,19 +1,19 @@
 using Aspire.ResourceService.Standalone.Server.ResourceProviders;
+using Aspire.ResourceService.Standalone.Server.ResourceProviders.K8s;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
-using static Aspire.ResourceService.Standalone.Server.Tests.TestConfigurationBuilder.TestConfigurationBuilder;
 
 namespace Aspire.ResourceService.Standalone.Server.Tests.ResourceProvider;
 
 public class ResourceNotificationServiceTests
 {
     [Fact]
-    public void AddResourceProvider_ShouldRegisterMultipleProviders_WhenConfigurationHasMultipleProviders()
+    public void AddResourceProvider_ShouldRegisterMultipleProviders_WhenConfigurationHasDockerOnly()
     {
         // Arrange
         var services = new ServiceCollection();
-        var config = GetTestMultipleProviderConfiguration();
+        var config = GetTestMultipleDockerProviderConfiguration();
 
         // Act
         services.AddResourceProvider(config);
@@ -22,12 +22,10 @@ public class ResourceNotificationServiceTests
 
         // Assert
         var dockerProvider = serviceProvider.GetService<DockerResourceProvider>();
-        var k8sProvider = serviceProvider.GetService<KubernetesResourceProvider>();
         var notificationService = serviceProvider.GetService<IResourceNotificationService>();
         var primaryProvider = serviceProvider.GetService<IResourceProvider>();
 
         dockerProvider.Should().NotBeNull();
-        k8sProvider.Should().NotBeNull();
         notificationService.Should().NotBeNull();
         primaryProvider.Should().NotBeNull();
         primaryProvider.Should().BeOfType<ResourceNotificationService>();
@@ -38,7 +36,7 @@ public class ResourceNotificationServiceTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var config = GetTestConfiguration("docker");
+        var config = TestConfigurationBuilder.TestConfigurationBuilder.GetTestConfiguration("docker");
 
         // Act
         services.AddResourceProvider(config);
@@ -93,15 +91,13 @@ public class ResourceNotificationServiceTests
         primaryProvider.Should().BeNull();
     }
 
-    private static IConfiguration GetTestMultipleProviderConfiguration()
+    private static IConfiguration GetTestMultipleDockerProviderConfiguration()
     {
         var config = new ConfigurationBuilder();
         config.AddInMemoryCollection(new Dictionary<string, string?>
         {
             { "ResourceProviders:0", "docker" },
-            { "ResourceProviders:1", "k8s" },
-            { "KubernetesResourceProviderConfiguration:Namespace", "test" },
-            { "KubernetesResourceProviderConfiguration:Servicenames", "redis;rabbitmq;mongo" }
+            { "ResourceProvider", "docker" } // This tests both single and multiple config paths
         });
         return config.Build();
     }
@@ -118,7 +114,7 @@ public class ResourceNotificationServiceTests
             return config.Build();
         }
 
-        return TestConfigurationBuilder.GetTestConfiguration(resourceProvider);
+        return TestConfigurationBuilder.TestConfigurationBuilder.GetTestConfiguration(resourceProvider);
     }
 
     private static IConfiguration GetTestEmptyConfiguration()
